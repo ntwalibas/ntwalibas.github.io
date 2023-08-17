@@ -1,0 +1,2798 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Introduction to the Variational Quantum Eigensolver</title>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+
+    <meta name="description" content="Personal blog of Ntwali B. Toussaint">
+    <meta name="keywords" content="vqe, ansatz, optimizer, gradient descent, spsa, NISQ">
+    <meta name="author" content="
+        Ntwali Bashige Toussaint,
+        Ntwali B. Toussaint,
+        Ntwali B.
+    ">
+
+    <link href="/css/blog.css" rel="stylesheet">
+    <link href="/css/trac.css" rel="stylesheet">
+    <link href="/css/markdown.css" rel="stylesheet">
+<script>MathJax={"tex":{"inlineMath":[["$","$"],["\\(","\\)"]],"displayMath":[["$$","$$"],["\\[","\\]"]]},"svg":{"fontCache":"global"}}</script><script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="content">
+    <div class="nav">
+    <div class="wrap">
+        <h3><a href="/" id="title">Ntwali B.</a></h3>
+    </div>
+</div>
+
+    <div class="front-matter">
+        <div class="wrap">
+            <h1>Introduction to the Variational Quantum Eigensolver</h1>
+            <h4>We explore the main components that make the variational quantum eigensolver (VQE) work: the ansatz, the optimizer, and the observable of interest. The main objective is to understand the basics and chart a path to learning more about VQE.</h4>
+            <div class="bylines">
+                <div class="byline">
+                    <h3>Published</h3>
+                    <p>17 August 2023</p>
+                </div>
+            </div>
+            <div class="clear"></div>
+        </div>
+    </div>
+    <div class="wrap article">
+        <h2 id="toc-title">Table of Contents </h2>
+        <ul id="toc" class="section-nav">
+<li class="toc-entry toc-h2">
+<a href="#introduction">Introduction</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#prerequisites">Prerequisites</a></li>
+<li class="toc-entry toc-h3"><a href="#notation">Notation</a></li>
+<li class="toc-entry toc-h3"><a href="#organization-of-the-tutorial">Organization of the tutorial</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2">
+<a href="#tooling">Tooling</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#theoretical-tools">Theoretical tools</a></li>
+<li class="toc-entry toc-h3"><a href="#software-tools">Software tools</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2">
+<a href="#basic-theory">Basic theory</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#the-measurement-postulate">The measurement postulate</a></li>
+<li class="toc-entry toc-h3"><a href="#expectation-values">Expectation values</a></li>
+<li class="toc-entry toc-h3"><a href="#the-variational-method">The variational method</a></li>
+<li class="toc-entry toc-h3"><a href="#the-variational-algorithm">The variational algorithm</a></li>
+<li class="toc-entry toc-h3"><a href="#examples">Examples</a></li>
+<li class="toc-entry toc-h3"><a href="#next-steps">Next steps</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2">
+<a href="#ansatz-design">Ansatz design</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#physics-inspired-ans%C3%A4tze">Physics inspired ansätze</a></li>
+<li class="toc-entry toc-h3"><a href="#hardware-inspired-ans%C3%A4tze">Hardware inspired ansätze</a></li>
+<li class="toc-entry toc-h3"><a href="#mathematics-inspired-ans%C3%A4tze">Mathematics inspired ansätze</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2">
+<a href="#optimizer-selection">Optimizer selection</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#gradient-based-methods">Gradient-based methods</a></li>
+<li class="toc-entry toc-h3"><a href="#gradient-free-methods">Gradient-free methods</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2">
+<a href="#measurement-reduction">Measurement reduction</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#grouping-qubit-wise-commutative-pauli-terms">Grouping qubit-wise commutative Pauli terms</a></li>
+<li class="toc-entry toc-h3"><a href="#weight-distribution-of-measurements">Weight distribution of measurements</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2">
+<a href="#practical-considerations">Practical considerations</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#the-measurement-problem">The measurement problem</a></li>
+<li class="toc-entry toc-h3"><a href="#barren-plateaus-problem">Barren plateaus problem</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#conclusion">Conclusion</a></li>
+<li class="toc-entry toc-h2">
+<a href="#derivations">Derivations</a>
+<ul>
+<li class="toc-entry toc-h3"><a href="#eigenvalues-and-eigenvectors-of-sigmaz">Eigenvalues and eigenvectors of $\sigma^{(z)}$</a></li>
+<li class="toc-entry toc-h3"><a href="#eigenvalues-and-eigenvectors-of-sigmay">Eigenvalues and eigenvectors of $\sigma^{(y)}$</a></li>
+<li class="toc-entry toc-h3"><a href="#eigenvalues-and-eigenvectors-of-sigmax">Eigenvalues and eigenvectors of $\sigma^{(x)}$</a></li>
+<li class="toc-entry toc-h3"><a href="#parametrized-quantum-circuits-via-state-preparation">Parametrized quantum circuits via state preparation</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="introduction">
+<a class="anchor" href="#introduction" aria-hidden="true"><span class="octicon octicon-link"></span></a>Introduction</h2>
+<p>The variational quantum eigensolver (VQE) is a hybrid quantum-classical
+algorithm that performs the hard computation on a quantum computer then
+uses a classical computer to process the measurement results from
+the quantum computer.</p>
+
+<p>The idea is quite simple: the premise of quantum computers is that the Hilbert
+space is so huge that we can’t reasonably explore it efficiently on a classical
+computer (under certain conditions - see
+<a href="https://en.wikipedia.org/wiki/Clifford_gates">clifford circuits</a>) so we use
+a quantum computer to do the exploration.<br>
+But once we have the result from the quantum computer, we use a classical
+optimizer to drive us towards the solution, which in our case
+is the ground state of the system we are studying.</p>
+
+<p>The sections that follow are all about making sense of the two paragraphs above
+and seeing VQE in action.</p>
+
+<h3 id="prerequisites">
+<a class="anchor" href="#prerequisites" aria-hidden="true"><span class="octicon octicon-link"></span></a>Prerequisites</h3>
+<p>It is assumed that the reader has some basic knowledge of quantum computation.
+That is the reader knows what a circuit is, and what gates and qubits are.
+In the tooling section, <a href="#theoretical-tools">theoretical tools</a> subsection
+we list the necessary theoretical tools needed to make fruitful use of this
+tutorial.</p>
+
+<p>This tutorial is very much practical oriented. I do not try
+to help build any intuition about VQE. The reader is encouraged
+to read Michał Stęchły’s <a href="https://www.mustythoughts.com/variational-quantum-eigensolver-explained">blog post on VQE</a>
+for a more intuitive explanation.</p>
+
+<h3 id="notation">
+<a class="anchor" href="#notation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Notation</h3>
+<p>We will work mostly with Pauli matrices.
+(The identity matrix is not a Pauli matrix but we need to list it here.)
+We will adopt the following notation for those matrices.</p>
+
+<ul>
+  <li>Identity $I$ matrix:</li>
+</ul>
+
+\[\sigma^{(i)} = I =
+\begin{bmatrix}
+1 &amp; 0 \\
+0 &amp; 1
+\end{bmatrix}\]
+
+<ul>
+  <li>Pauli $X$ matrix:</li>
+</ul>
+
+\[\sigma^{(x)} = X =
+\begin{bmatrix}
+0 &amp; 1 \\
+1 &amp; 0
+\end{bmatrix}\]
+
+<ul>
+  <li>Pauli $Y$ matrix:</li>
+</ul>
+
+\[\sigma^{(y)} = Y =
+\begin{bmatrix}
+0 &amp; -i \\
+i &amp; 0
+\end{bmatrix}\]
+
+<ul>
+  <li>Pauli $Z$ matrix:</li>
+</ul>
+
+\[\sigma^{(z)} = Z =
+\begin{bmatrix}
+1 &amp; 0 \\
+0 &amp; -1
+\end{bmatrix}\]
+
+<div class="figure figure-alert figure-danger" style="margin-top: 10px">
+<div class="caption">
+    <div class="caption-label">
+        Different roles of Pauli matrices
+    </div>
+    It is important to remain cognizant of the fact that Pauli
+    matrices can either be gates or observables.
+    And the way they are handled in code depends on whether one
+    is dealing with a gate or an observable.<br>
+    For instance, as a gate the Pauli matrix $\sigma^{(x)}$ will appear
+    exactly as it is in both code and equations.
+    But as an observable, it will appear as the matrix above
+    in equations but will be translated to a Hadamard gate in code.
+</div>
+</div>
+
+<p>In addition to Pauli matrices, we will make use of the following
+quantum gates:</p>
+
+<ul>
+  <li>Hadamard gate:</li>
+</ul>
+
+\[H =
+\dfrac{1}{\sqrt{2}}\begin{bmatrix}
+1 &amp; 1 \\
+1 &amp; -1
+\end{bmatrix}\]
+
+<ul>
+  <li>Phase gate:</li>
+</ul>
+
+\[S =
+\begin{bmatrix}
+1 &amp; 0 \\
+0 &amp; i
+\end{bmatrix}\]
+
+<ul>
+  <li>Phase shift gate:</li>
+</ul>
+
+\[P(\phi) =
+\begin{bmatrix}
+1 &amp; 0 \\
+0 &amp; {\rm e}^{i\phi}
+\end{bmatrix}\]
+
+<ul>
+  <li>Rotation about x-axis:</li>
+</ul>
+
+\[RX(\theta) =
+\begin{bmatrix}
+\cos\frac{\theta}{2} &amp; -i\sin\frac{\theta}{2} \\
+-i\sin\frac{\theta}{2} &amp; \cos\frac{\theta}{2}
+\end{bmatrix}\]
+
+<ul>
+  <li>Rotation about y-axis:</li>
+</ul>
+
+\[RY(\theta) =
+\begin{bmatrix}
+\cos\frac{\theta}{2} &amp; -\sin\frac{\theta}{2} \\
+\sin\frac{\theta}{2} &amp; \cos\frac{\theta}{2}
+\end{bmatrix}\]
+
+<h3 id="organization-of-the-tutorial">
+<a class="anchor" href="#organization-of-the-tutorial" aria-hidden="true"><span class="octicon octicon-link"></span></a>Organization of the tutorial</h3>
+<p>In the next section we introduce the tools (theoretical and practical)
+needed to understand and implement VQE.</p>
+
+<p>In the basic theory section, we justify why VQE works and how it works.
+We will provide the physical justification of the algorithm and
+explore two simple examples from which we can build up more complicated
+examples.</p>
+
+<p>In the ansatz design section we learn about the different ways ansätze
+are designed. We will explore some of the challenges that occur with
+particular choices of different designs.</p>
+
+<p>In the optimizer selection section we talk about the different optimizers
+that are available so the reader can play with them.</p>
+
+<p>In the measurement reduction section we show that it is possible
+to reduce the number of measurements so we can obtain results faster.</p>
+
+<p>And last in the practical considerations section we think about the limitations
+of VQE.</p>
+
+<h2 id="tooling">
+<a class="anchor" href="#tooling" aria-hidden="true"><span class="octicon octicon-link"></span></a>Tooling</h2>
+<h3 id="theoretical-tools">
+<a class="anchor" href="#theoretical-tools" aria-hidden="true"><span class="octicon octicon-link"></span></a>Theoretical tools</h3>
+<p>The reader is expected to know the following mathematics:</p>
+<ol>
+  <li>Finding the eigenvalues and eigenvectors of a matrix.</li>
+  <li>Basic operations on matrices.</li>
+  <li>Kronecker product, especially using the mixed-product property.</li>
+</ol>
+
+<p>The reader is also expected to know the following basic quantum computation theory:</p>
+<ol>
+  <li>Quantum states as rays in Hilbert space.</li>
+  <li>Quantum gates as evolution operators of quantum states.</li>
+</ol>
+
+<p>A review of the measurement postulate will be provided
+so it is not a prerequisite.</p>
+
+<p>The book <em>Quantum Computation and Quantum Information</em>
+<a class="citation" href="#nielsen_chuang_2010">(Nielsen &amp; Chuang, 2010)</a> has the necessary background
+that is required for much of this post.</p>
+
+<h3 id="software-tools">
+<a class="anchor" href="#software-tools" aria-hidden="true"><span class="octicon octicon-link"></span></a>Software tools</h3>
+<p>We will use PennyLane from Xanadu to run code we write.
+It is an easy to use library and has an excellent documentation
+which includes demos, tutorials and reference documentation.</p>
+
+<p>The installation instructions can be found at
+<a href="https://pennylane.ai/install/">https://pennylane.ai/install/</a>.</p>
+
+<p><em>Note: we will use the noiseless state vector simulator so as not worry</em>
+<em>our heads with the complications that come with having a noisy device.</em>
+<em>Maybe a future post will explore the behavior of VQE when noise</em>
+<em>is taken into account.</em></p>
+
+<h2 id="basic-theory">
+<a class="anchor" href="#basic-theory" aria-hidden="true"><span class="octicon octicon-link"></span></a>Basic theory</h2>
+<p>In physics, if we know the Hamiltonian of a system
+then we know the dynamics of the system.
+This can be easily seen by looking at Schrödinger’s equation.
+Therefore, we will first need to have our problem encoded in
+a Hamiltonian.</p>
+
+<p>We won’t spend our time trying to devise Hamiltonians —
+this is very hard work — but we will assume that they are given to us.
+Our goal will simply be finding the ground state energy (zero-point energy)
+of the given Hamiltonian.</p>
+
+<p>We care about the ground state energy because it corresponds
+to the energy of any system close to absolute zero.
+It is true that sometimes we care about excited states of
+a system but in this tutorial we won’t worry about that.</p>
+
+<p>We begin by justifying why VQE works. Then we see why a classical
+optimizer is necessary to find the ground state energy.
+Having grounded ourselves – pun intended – we tie all the different parts
+required to make VQE work in some sort of template.
+Last, we code a couple of examples to see if simulations match theoretical
+predictions.</p>
+
+<h3 id="the-measurement-postulate">
+<a class="anchor" href="#the-measurement-postulate" aria-hidden="true"><span class="octicon octicon-link"></span></a>The measurement postulate</h3>
+<p>Let $H$, the Hamiltonian, be the observable representing the total energy of the
+system. By the spectral theorem $H$ has spectral decomposition:</p>
+
+\[H = \sum_{i} \lambda_i P_i \tag{1}\]
+
+<p>Where $\lambda_i$ is an eigenvalue and $P_i$ is a projector
+onto the eigenspace of $H$ with corresponding eigenvalue $\lambda_i$.
+That simply means that $P_{i}^{2} = P_i$
+and $P_i = \ket{\lambda_i} \bra{\lambda_i}$
+where $\{ \ket{\lambda_i} \}$ is the eigenspace of $H$
+with each eigenvector $\ket{\lambda_i}$ associated to eigenvalue $\lambda_i$.</p>
+
+<p>We can therefore write equation $(\href{#mjx-eqn:1}{1})$ as:</p>
+
+\[H = \sum_{i} \lambda_i \ket{\lambda_i} \bra{\lambda_i} \tag{1'}\]
+
+<p>Upon measurement (<em>before</em> the measurement but not after)
+the <strong>probability</strong> of measuring the eigenvalue $\lambda_i$
+given some state $\ket{\psi}$ is given by:</p>
+
+\[p(\lambda_i) = \bra{\psi} P_i \ket{\psi}
+= \braket{\psi\\|\lambda_i} \braket{\lambda_i\\|\psi}
+= \braket{\psi\\|\lambda_i} \braket{\psi\\|\lambda_i}^*
+= \lvert\braket{\psi\\|\lambda_i}\rvert^{2} \tag{2}\]
+
+<p>The final state <em>after</em> measurement is given by:</p>
+
+\[\ket{\psi} \mapsto \frac{P_i \ket{\psi}}{\sqrt{p(\lambda_i)}}\]
+
+<p>We will care only about post-measurement states for the purpose of calculating
+probabilities but not much else beside that.</p>
+
+<div class="figure figure-alert figure-success" style="margin-top: 10px">
+<div class="caption">
+    <div class="caption-label">
+        Measuring observables and eigenvalues
+    </div>
+    It is important to realize that when we are asked to measure an observable,
+    we are being asked to find the probabilities of measuring its eigenvalues
+    given some state.<br>
+    In practice though we will see the eigenvectors appearing with a certain
+    frequency. So we will calculate the probability from those frequencies.
+</div>
+</div>
+
+<div class="figure figure-alert figure-info" style="margin-top: 10px">
+<div class="caption">
+    <div class="caption-label">
+        Different terminology for measurements
+    </div>
+    It is common to hear/read that a measurement was performed
+    in a certain basis.<br>
+    Let us recall that the eigenvectors of a Hermitian operator
+    form a <i>complete</i> basis. This means that we can express
+    any state in the corresponding space as a linear combination
+    of the eigenvectors of that Hermitian operator.<br>
+    For example the $\sigma^{(z)}$ observable, being a Hermitian operator,
+    has eigenvectors $\ket{0} = \begin{bmatrix}1\\0\end{bmatrix}$ and
+    $\ket{1} = \begin{bmatrix}0\\1\end{bmatrix}$.<br>
+    Consequently every one qubit state can be written as
+    $\ket{\psi} = c_0 \ket{0} + c_1 \ket{1}$.
+    States written using the eigenvectors of $\sigma^{(z)}$ are said to be
+    written in the <i>standard basis</i> or simply in the $\sigma^{(z)}$ basis.<br>
+    (It is called standard basis because it maps to classical binary,
+    which is the standard for classical computing.)<br><br>
+    Similarly the $\sigma^{(x)}$ observable has eigenvectors
+    $\ket{+} = \dfrac{1}{\sqrt{2}}\begin{bmatrix}1\\1\end{bmatrix}$ and
+    $\ket{-} = \dfrac{1}{\sqrt{2}}\begin{bmatrix}1\\-1\end{bmatrix}$.<br>
+    Therefore every one qubit state can also be written as
+    $\ket{\psi} = c_0 \ket{+} + c_1 \ket{-}$.
+    States written using the eigenvectors of $\sigma^{(x)}$ are said to be
+    written in the <i>Hadamard basis</i> or the simply in the $\sigma^{(x)}$ basis.<br>
+    (It is called the Hadamard basis because the eigenvectors of $\sigma^{(x)}$ are
+    obtained by applying the Hadamard gate to eigenvectors of $\sigma^{(z)}$.)<br><br>
+    <b>However, we will find it convenient most of the time to work
+    in the standard basis.</b><br><br>
+    So performing a measurement in the standard basis is equivalent
+    to using projectors $P_0=\ket{0}\bra{0}$ and $P_1=\ket{1}\bra{1}$.<br>
+    Equivalently, performing a measurement in the Hadamard basis is equivalent
+    to using the projectors $P_+=\ket{+}\bra{+}$ and $P_-=\ket{-}\bra{-}$
+</div>
+</div>
+
+<h4 id="pauli-matrices-and-the-identity-form-a-complete-basis">Pauli matrices and the identity form a complete basis</h4>
+<p>The Pauli matrices with the identity matrix
+form a complete basis for all observables on a single qubit.
+The tensor products of Pauli matrices along with the identity
+matrix form a complete basis for observables on multiple
+qubits.</p>
+
+<p>What that means is that every observables we can think
+about can be expressed as a linear combination of Pauli
+matrices and the identity matrix.<br>
+<strong>Therefore we only need to learn how to measure Pauli matrices.</strong></p>
+
+<h4 id="measurement-of-sigmaz-with-respect-to-ketpsi--c_0-ket0--c_1-ket1">Measurement of $\sigma^{(z)}$ with respect to $\ket{\psi} = c_0 \ket{0} + c_1 \ket{1}$</h4>
+<p>The eigenvalues and eigenvectors of $\sigma^{(z)}$ are calculated
+in the <a href="#eigenvalues-and-eigenvectors-of-sigmaz">derivations section</a> and are found to be:</p>
+
+<ol>
+  <li>Eigenvalue $+1$ with eigenvector $\ket{0} = \begin{bmatrix} 1 \\ 0\end{bmatrix}$</li>
+  <li>Eigenvalue $-1$ with eigenvector $\ket{1} = \begin{bmatrix} 0 \\ 1\end{bmatrix}$</li>
+</ol>
+
+<ul>
+  <li>
+<strong>Measurement with respect to $\ket{\psi} = c_0 \ket{0} + c_1 \ket{1}$</strong><br>
+We calculate only the probability of obtaining eigenvalue $+1$ given the state
+$\ket{\psi} = c_0 \ket{0} + c_1 \ket{1}$. The calculation for eigenvalue
+$-1$ is similar and left as an exercise.</li>
+</ul>
+
+\[\begin{align}
+    p(+1) &amp;= \lvert\braket{\psi\\|0}\rvert^{2} \\
+    &amp;= \lvert (c_0 \ket{0} + c_1 \ket{1})\ket{0}\rvert^{2} \\
+    &amp;= \lvert c_0 \braket{0\\|0} + c_1 \braket{1\\|0} \rvert^{2} \\
+    &amp;= \lvert c_0 \rvert^{2} \\
+\end{align}\]
+
+<ul>
+  <li>
+<strong>Quantum circuit for performing the measurement</strong><br>
+The measurement of $+1$ corresponds to the use of the projector
+$P_+ = \ket{0}\bra{0}$. Therefore we have:</li>
+</ul>
+
+\[\begin{align}
+    p(+1) &amp;= \bra{\psi}P_+\ket{\psi} \\
+    &amp;= \braket{\psi\\|0}\braket{0\\|\psi} \\
+    &amp;= \braket{\psi\\|I\\|0}\braket{0\\|I\\|\psi} \\
+    &amp;= \lvert \braket{0\\|I\\|\psi} \rvert^{2} \\
+\end{align}\]
+
+<p>Concomitantly, the measurement of $-1$ corresponds to the use of the projector
+$P_- = \ket{1}\bra{1}$ leading to:</p>
+
+\[\begin{align}
+    p(-1) &amp;= \bra{\psi}P_-\ket{\psi} \\
+    &amp;= \braket{\psi\\|1}\braket{1\\|\psi} \\
+    &amp;= \braket{\psi\\|I\\|1}\braket{1\\|I\\|\psi} \\
+    &amp;= \lvert \braket{1\\|I\\|\psi} \rvert^{2} \\
+\end{align}\]
+
+<p>We conclude then that the circuit to perform a measurement
+of the $\sigma^{(z)}$ observable given a state $\psi$ is as follows:</p>
+
+<div class="figure">
+    <img src="/assets/images/vqe/z-measurement.png" style="width: 20%; height: auto; display: block; margin: 0 auto">
+    <div class="caption">
+        <span class="caption-label">Measurement of the $\sigma^{(z)}$ observable:</span>
+        since the identity $I$ action on the state $\ket{\psi}$ is a no-op we need not do
+        anything, we just measure directly.
+    </div>
+</div>
+
+<ul>
+  <li>
+<strong>Code for performing the measurement</strong><br>
+We prepare the state $\ket{\psi} = RY(^\pi/_2)\ket{0}$ and measure
+the $\sigma^{(z)}$ observable with respect to that state.
+$RY$ is a rotation about the y-axis.</li>
+</ul>
+
+<div class="figure">
+
+  <figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">pennylane</span> <span class="k">as</span> <span class="n">qml</span>
+<span class="kn">from</span> <span class="nn">pennylane</span> <span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+
+<span class="n">dev</span> <span class="o">=</span> <span class="n">qml</span><span class="p">.</span><span class="n">device</span><span class="p">(</span>
+    <span class="s">"default.qubit"</span><span class="p">,</span>
+    <span class="n">wires</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">shots</span> <span class="o">=</span> <span class="mi">10000</span>
+<span class="p">)</span>
+
+<span class="o">@</span><span class="n">qml</span><span class="p">.</span><span class="n">qnode</span><span class="p">(</span><span class="n">dev</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">measure</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+    <span class="c1"># Prepare the state against which to measure
+</span>    <span class="n">qml</span><span class="p">.</span><span class="n">RY</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># Get the frequencies for each eigenvalue of the Z observable
+</span>    <span class="k">return</span> <span class="n">qml</span><span class="p">.</span><span class="n">counts</span><span class="p">(</span><span class="n">qml</span><span class="p">.</span><span class="n">PauliZ</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">"__main__"</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">measure</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span></code></pre></figure>
+
+  <div class="caption">
+    <span class="caption-label">Measurent of the $\sigma^{(z)}$ observable:</span>
+    we prepare the state $\ket{\psi} = RY(^\pi/_2)\ket{0}$
+    as a generic example, any state would do.
+</div>
+</div>
+
+<p>Note that if we prepared eigenvectors of $\sigma^{(z)}$
+we will obtain eigenvalues with $100\%$ probability.
+That is if we prepare the $\ket{0}$ state, we will obtain
+eigenvalue $+1$ with $100\%$ probability.<br>
+Equivalently, if we prepare $\ket{1}$, we will obtain
+eigenvalue $-1$ with $100\%$ probability.</p>
+
+<h4 id="measurement-of-sigmay-with-respect-to-ketpsi--c_0-ket0--c_1-ket1">Measurement of $\sigma^{(y)}$ with respect to $\ket{\psi} = c_0 \ket{0} + c_1 \ket{1}$</h4>
+<p>The eigenvalues and eigenvectors of $\sigma^{(y)}$ are calculated
+in the <a href="#eigenvalues-and-eigenvectors-of-sigmay">derivations section</a> and are found to be:</p>
+
+<ol>
+  <li>Eigenvalue $+1$ with eigenvector $\ket{+i} = \dfrac{1}{\sqrt{2}}(\ket{0} + i\ket{1})$</li>
+  <li>Eigenvalue $-1$ with eigenvector $\ket{-i} = \dfrac{1}{\sqrt{2}}(\ket{0} - i\ket{1})$</li>
+</ol>
+
+<ul>
+  <li>
+<strong>Measurement with respect to $\ket{\psi} = c_0 \ket{0} + c_1 \ket{1}$</strong><br>
+We calculate only the probability of obtaining eigenvalue $+1$ given the state
+$\ket{\psi} = c_0 \ket{0} + c_1 \ket{1}$. The calculation for eigenvalue
+$-1$ is similar and left as an exercise.</li>
+</ul>
+
+\[\begin{align}
+    p(+1) &amp;= \lvert\braket{\psi\\|+i}\rvert^{2} \\
+    &amp;= \lvert (c_0 \ket{0} + c_1 \ket{1})\ket{+i}\rvert^{2} \\
+    &amp;= \lvert c_0 \braket{0\\|+i} + c_1 \braket{1\\|+i} \rvert^{2} \\
+    &amp;= \left\lvert c_0 \left(\bra{0} \left(\dfrac{1}{\sqrt{2}} (\ket{0} + i\ket{1})\right)\right)
+    + c_1 \left(\bra{1} \left(\dfrac{1}{\sqrt{2}} (\ket{0} + i\ket{1})\right)\right) \right\rvert^{2} \\
+    &amp;= \left\lvert \dfrac{c_0}{\sqrt{2}}\left( \braket{0\\|0} \right)
+    + \dfrac{ic_1}{\sqrt{2}}\left( \braket{1\\|1} \right) \right\rvert^{2} \\
+    &amp;= \left\lvert \dfrac{c_0}{\sqrt{2}} + \dfrac{ic_1}{\sqrt{2}} \right\rvert^{2} \\
+    &amp;= \dfrac{1}{2} \lvert c_0 + ic_1 \rvert^{2} \\
+    &amp;= \dfrac{1}{2} \left(\sqrt{c_{0}^{2} + c_{1}^{2}}\right)^{2} \\
+    &amp;= \dfrac{c_{0}^{2} + c_{1}^{2}}{2}
+\end{align}\]
+
+<ul>
+  <li>
+<strong>Quantum circuit for performing the measurement</strong><br>
+The measurement of $+1$ corresponds to the use of the projector
+$P_+ = \ket{+i}\bra{+i}$. Therefore we have:</li>
+</ul>
+
+\[\begin{align}
+    p(+1) &amp;= \bra{\psi}P_+\ket{\psi} \\
+    &amp;= \braket{\psi\\|+i}\braket{+i\\|\psi} \\
+    &amp;= \braket{\psi\\|SH\\|0}\braket{0\\|HS^\dagger\\|\psi} \\
+    &amp;= \lvert \braket{0\\|HS^\dagger\\|\psi} \rvert^{2} \\
+\end{align}\]
+
+<p>Similarly, the measurement of $-1$ corresponds to the use of the projector
+$P_- = \ket{-i}\bra{-i}$ leading to:</p>
+
+\[\begin{align}
+    p(-1) &amp;= \bra{\psi}P_-\ket{\psi} \\
+    &amp;= \braket{\psi\\|-i}\braket{-i\\|\psi} \\
+    &amp;= \braket{\psi\\|SH\\|1}\braket{1\\|HS^\dagger\\|\psi} \\
+    &amp;= \lvert \braket{1\\|HS^\dagger\\|\psi} \rvert^{2} \\
+\end{align}\]
+
+<p>We conclude then that the circuit to perform a measurement
+of the $\sigma^{(y)}$ observable given a state $\psi$ is as follows:</p>
+
+<div class="figure">
+    <img src="/assets/images/vqe/y-measurement.png" style="width: 30%; height: auto; display: block; margin: 0 auto">
+    <div class="caption">
+        <span class="caption-label">Measurement of the $\sigma^{(y)}$ observable:</span>
+        we need to perform a basis change from the $\sigma^{(z)}$ basis to the $\sigma^{(y)}$
+        basis using $HS^\dagger$ then perform a standard measurement in the
+        $\sigma^{(z)}$ basis. We will get eigenvectors in the $\sigma^{(z)}$ basis
+        but the probabilities will correspond to measurements of the
+        eigenvalues of $\sigma^{(y)}$.
+    </div>
+</div>
+
+<ul>
+  <li>
+<strong>Code for performing the measurement</strong><br>
+We prepare the state $\ket{\psi} = H\ket{0}$ and measure
+the $\sigma^{(y)}$ observable with respect to that state.</li>
+</ul>
+
+<div class="figure">
+
+  <figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">pennylane</span> <span class="k">as</span> <span class="n">qml</span>
+<span class="kn">from</span> <span class="nn">pennylane</span> <span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+
+<span class="n">dev</span> <span class="o">=</span> <span class="n">qml</span><span class="p">.</span><span class="n">device</span><span class="p">(</span>
+    <span class="s">"default.qubit"</span><span class="p">,</span>
+    <span class="n">wires</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">shots</span> <span class="o">=</span> <span class="mi">10000</span>
+<span class="p">)</span>
+
+<span class="o">@</span><span class="n">qml</span><span class="p">.</span><span class="n">qnode</span><span class="p">(</span><span class="n">dev</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">measure</span><span class="p">():</span>
+    <span class="s">"""Measurement of the Y observable
+    using facilities provided by PennyLane.
+    """</span>
+    <span class="c1"># Prepare the state
+</span>    <span class="n">qml</span><span class="p">.</span><span class="n">Hadamard</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># Perform the measurement
+</span>    <span class="k">return</span> <span class="n">qml</span><span class="p">.</span><span class="n">counts</span><span class="p">(</span><span class="n">qml</span><span class="p">.</span><span class="n">PauliY</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+<span class="o">@</span><span class="n">qml</span><span class="p">.</span><span class="n">qnode</span><span class="p">(</span><span class="n">dev</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">custom_measure</span><span class="p">():</span>
+    <span class="s">"""Custom circuit to measure the Y observable.
+    We need to perform a change of basis then
+    do a measurement in the standard basis
+    as by the circuit above.
+    """</span>
+    <span class="c1"># Prepare the state
+</span>    <span class="n">qml</span><span class="p">.</span><span class="n">Hadamard</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+    
+    <span class="c1"># Perform a change of basis
+</span>    <span class="n">qml</span><span class="p">.</span><span class="n">adjoint</span><span class="p">(</span><span class="n">qml</span><span class="p">.</span><span class="n">S</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">Hadamard</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># Measure in standard basis
+</span>    <span class="k">return</span> <span class="n">qml</span><span class="p">.</span><span class="n">counts</span><span class="p">(</span><span class="n">qml</span><span class="p">.</span><span class="n">PauliZ</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">"__main__"</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">measure</span><span class="p">())</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">custom_measure</span><span class="p">())</span></code></pre></figure>
+
+  <div class="caption">
+    <span class="caption-label">Measurement of the $\sigma^{(y)}$ observable:</span>
+    we prepare the state $\ket{\psi} = H\ket{0}$. We note that we obtain
+    eigenvalue $+1$ with appromixately $0.5$ probablity and same
+    for eigenvalue $-1$. It is easy to verify that this corresponds
+    to theoretical predictions.<br>
+    Also, note that <code>measure()</code> and <code>custom_measure()</code>
+    provide the same results. In the first case, we use facilities provided by PennyLane.
+    In the second case, we use the formula derived.
+</div>
+</div>
+
+<p>Note that if we prepared eigenvectors of $\sigma^{(y)}$
+we will obtain eigenvalues with $100\%$ probability.
+That is if we prepare the $\ket{+i} = SH\ket{0}$ state,
+we will obtain eigenvalue $+1$ with $100\%$ probability.<br>
+Equivalently, if we prepare $\ket{-i} = SH\ket{1}$,
+we will obtain eigenvalue $-1$ with $100\%$ probability.</p>
+
+<h4 id="measurement-of-sigmax-with-respect-to-ketpsi--c_0-ket0--c_1-ket1">Measurement of $\sigma^{(x)}$ with respect to $\ket{\psi} = c_0 \ket{0} + c_1 \ket{1}$</h4>
+<p>The eigenvalues and eigenvectors of $\sigma^{(x)}$ are calculated
+in the <a href="#eigenvalues-and-eigenvectors-of-sigmax">derivations section</a> and are found to be:</p>
+
+<ol>
+  <li>Eigenvalue $+1$ with eigenvector $\ket{+} = \dfrac{1}{\sqrt{2}}(\ket{0} + \ket{1})$</li>
+  <li>Eigenvalue $-1$ with eigenvector $\ket{-} = \dfrac{1}{\sqrt{2}}(\ket{0} - \ket{1})$</li>
+</ol>
+
+<ul>
+  <li>
+<strong>Measurement with respect to $\ket{\psi} = c_0 \ket{0} + c_1 \ket{1}$</strong><br>
+We calculate only the probability of obtaining eigenvalue $+1$ given the state
+$\ket{\psi} = c_0 \ket{0} + c_1 \ket{1}$. The calculation for eigenvalue
+$-1$ is similar and left as an exercise.</li>
+</ul>
+
+\[\begin{align}
+    p(+1) &amp;= \lvert\braket{\psi\\|+}\rvert^{2} \\
+    &amp;= \lvert (c_0 \ket{0} + c_1 \ket{1})\ket{+}\rvert^{2} \\
+    &amp;= \lvert c_0 \braket{0\\|+} + c_1 \braket{1\\|+} \rvert^{2} \\
+    &amp;= \left\lvert c_0 \left(\bra{0} \left(\dfrac{1}{\sqrt{2}} (\ket{0} + \ket{1})\right)\right)
+    + c_1 \left(\bra{1} \left(\dfrac{1}{\sqrt{2}} (\ket{0} + \ket{1})\right)\right) \right\rvert^{2} \\
+    &amp;= \left\lvert \dfrac{c_0}{\sqrt{2}}\left( \braket{0\\|0} \right)
+    + \dfrac{c_1}{\sqrt{2}}\left( \braket{1\\|1} \right) \right\rvert^{2} \\
+    &amp;= \left\lvert \dfrac{c_0}{\sqrt{2}} + \dfrac{c_1}{\sqrt{2}} \right\rvert^{2} \\
+    &amp;= \dfrac{1}{2} \lvert c_0 + c_1 \rvert^{2} \\
+    &amp;= \dfrac{1}{2} \left(\sqrt{c_{0}^{2} + c_{1}^{2}}\right)^{2} \\
+    &amp;= \dfrac{c_{0}^{2} + c_{1}^{2}}{2}
+\end{align}\]
+
+<ul>
+  <li>
+<strong>Quantum circuit for performing the measurement</strong><br>
+The measurement of $+1$ corresponds to the use of the projector
+$P_+ = \ket{+}\bra{+}$. Therefore we have:</li>
+</ul>
+
+\[\begin{align}
+    p(+1) &amp;= \bra{\psi}P_+\ket{\psi} \\
+    &amp;= \braket{\psi\\|+}\braket{+\\|\psi} \\
+    &amp;= \braket{\psi\\|H\\|0}\braket{0\\|H\\|\psi} \\
+    &amp;= \lvert \braket{0\\|H\\|\psi} \rvert^{2} \\
+\end{align}\]
+
+<p>Similarly, the measurement of $-1$ corresponds to the use of the projector
+$P_- = \ket{-}\bra{-}$ leading to:</p>
+
+\[\begin{align}
+    p(-1) &amp;= \bra{\psi}P_-\ket{\psi} \\
+    &amp;= \braket{\psi\\|-}\braket{-\\|\psi} \\
+    &amp;= \braket{\psi\\|H\\|1}\braket{1\\|H\\|\psi} \\
+    &amp;= \lvert \braket{1\\|H\\|\psi} \rvert^{2} \\
+\end{align}\]
+
+<p>We conclude then that the circuit to perform a measurement
+of the $\sigma^{(x)}$ observable given a state $\psi$ is as follows:</p>
+
+<div class="figure">
+    <img src="/assets/images/vqe/x-measurement.png" style="width: 30%; height: auto; display: block; margin: 0 auto">
+    <div class="caption">
+        <span class="caption-label">Measurement of the $\sigma^{(x)}$ observable:</span>
+        we need to perform a basis change from the $\sigma^{(z)}$ basis to the $\sigma^{(x)}$
+        basis using $H$ then perform a standard measurement in the
+        $\sigma^{(z)}$ basis. We will get eigenvectors in the $\sigma^{(z)}$ basis
+        but the probabilities will correspond to measurements of the
+        eigenvalues of $\sigma^{(x)}$.
+    </div>
+</div>
+
+<ul>
+  <li>
+<strong>Code for performing the measurement</strong><br>
+We prepare the state $\ket{\psi} = X\ket{0}$ and measure
+the $\sigma^{(x)}$ observable with respect to that state.</li>
+</ul>
+
+<div class="figure">
+
+  <figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">pennylane</span> <span class="k">as</span> <span class="n">qml</span>
+
+<span class="n">dev</span> <span class="o">=</span> <span class="n">qml</span><span class="p">.</span><span class="n">device</span><span class="p">(</span>
+    <span class="s">"default.qubit"</span><span class="p">,</span>
+    <span class="n">wires</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">shots</span> <span class="o">=</span> <span class="mi">10000</span>
+<span class="p">)</span>
+
+<span class="o">@</span><span class="n">qml</span><span class="p">.</span><span class="n">qnode</span><span class="p">(</span><span class="n">dev</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">measure</span><span class="p">():</span>
+    <span class="s">"""Measurement of the Y observable
+    using facilities provided by PennyLane.
+    """</span>
+    <span class="c1"># Prepare the state
+</span>    <span class="n">qml</span><span class="p">.</span><span class="n">PauliX</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># Perform the measurement
+</span>    <span class="k">return</span> <span class="n">qml</span><span class="p">.</span><span class="n">counts</span><span class="p">(</span><span class="n">qml</span><span class="p">.</span><span class="n">PauliX</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+<span class="o">@</span><span class="n">qml</span><span class="p">.</span><span class="n">qnode</span><span class="p">(</span><span class="n">dev</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">custom_measure</span><span class="p">():</span>
+    <span class="s">"""Custom circuit to measure the X observable.
+    We need to perform a change of basis then
+    do a measurement in the standard basis
+    as by the circuit above.
+    """</span>
+    <span class="c1"># Prepare the state
+</span>    <span class="n">qml</span><span class="p">.</span><span class="n">PauliX</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+    
+    <span class="c1"># Perform a change of basis
+</span>    <span class="n">qml</span><span class="p">.</span><span class="n">Hadamard</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># Measure in standard basis
+</span>    <span class="k">return</span> <span class="n">qml</span><span class="p">.</span><span class="n">counts</span><span class="p">(</span><span class="n">qml</span><span class="p">.</span><span class="n">PauliZ</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">"__main__"</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">measure</span><span class="p">())</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">custom_measure</span><span class="p">())</span></code></pre></figure>
+
+  <div class="caption">
+    <span class="caption-label">Measurement of the $\sigma^{(x)}$ observable:</span>
+    we prepare the state $\ket{\psi} = X\ket{0}$. We note that we obtain
+    eigenvalue $+1$ with appromixately $0.5$ probablity and same
+    for eigenvalue $-1$. It is easy to verify that this corresponds
+    to theoretical predictions.<br>
+    Also, note that <code>measure()</code> and <code>custom_measure()</code>
+    provide the same results. In the first case, we use facilities provided by
+    PennyLane. In the second case, we use the derived circuit.
+</div>
+</div>
+
+<p>Note that if we prepared the eigenvectors of $\sigma^{(x)}$
+we will obtain eigenvalues with $100\%$ probability.
+That is if we prepare the $\ket{+} = H\ket{0}$ state,
+we will obtain eigenvalue $+1$ with $100\%$ probability.<br>
+Equivalently, if we prepare $\ket{-} = H\ket{1}$,
+we will obtain eigenvalue $-1$ with $100\%$ probability.</p>
+
+<h4 id="multi-qubits-measurement">Multi-qubits measurement</h4>
+<p>In order to perform measurements on multiple qubits,
+we only need to perform a change of basis on each qubit
+individually as dictated by the form of the Hamiltonian.</p>
+
+<p>Let us justify this: we will only consider the case of two qubits
+though the procedure can be proven for an arbitrary number of qubits.</p>
+
+<p>Consider a generic 2-qubits Hamiltonian of the form $H = \sigma^{(m)} \otimes \sigma^{(n)}$,
+where $n, m \in \{i, x, y, z\}$.
+We would like to know how to find the probabilities corresponding
+to the eigenvalues of $H$.</p>
+
+<p>First, we find the projectors:</p>
+
+\[\begin{align}
+    H &amp;= \sum_i \lambda^{(m)}_i P^{(m)}_i \otimes \sum_j \lambda^{(n)}_j P^{(n)}_j \\
+    &amp;= \sum_{i,j} \lambda^{(m)}_i \cdot \lambda^{(n)}_j \left(P^{(m)}_i \otimes P^{(n)}_j\right) \\
+    &amp;= \sum_r \lambda_r P_r
+\end{align}\]
+
+<p>Where we set $\lambda_r = \lambda^{(m)}_i \cdot \lambda^{(n)}_j$
+and $P_r = P^{(m)}_i \otimes P^{(n)}_j$.</p>
+
+<!-- In general, if $H = \bigotimes_{k} \sigma_{k}^{(l)}$ with $l \in \\{i, x, y, z\\}$
+then we have:
+
+
+$$
+H = \sum_{r=0}^{2^k-1} \left(\prod_{k} \lambda_r^{(k)} \bigotimes_{k} P^{(k)}_r\right)
+$$
+
+
+From the equation above, we conclude that the projectors of $H$
+are $\bigotimes_{k} P^{(k)}_r$. -->
+
+<p>Then, we find the probability of measuring an arbitrary eigenvalue $\lambda_r$.
+Again, we only make the derivation for the 2-qubits case and make a general
+statement for the multiple-qubits case:</p>
+
+\[\begin{align}
+    p(\lambda_r) &amp;= \bra{\psi} P_r \ket{\psi} \\
+    &amp;= \bra{\psi} (P_i^{(m)} \otimes P_j^{(n)}) \ket{\psi} \\
+    &amp;= \bra{\psi} \left(\ket{m}\bra{m} \otimes \ket{n}\bra{n}\right) \ket{\psi} &amp;P^{(\star)} = \ket{\star}\bra{\star} \\
+    &amp;= \bra{\psi} \left((\overbrace{G_m\ket{0}}^{A}\overbrace{\bra{0}G_m^\dagger}^{B}) \otimes
+    (\overbrace{G_n\ket{0}}^{C}\overbrace{\bra{0}G_n^\dagger}^{D}) \right) \ket{\psi} &amp;\ket{\star}=G_\star\ket{0} \\
+    &amp;= \bra{\psi} \left( (\overbrace{G_m}^{A'}\overbrace{\ket{0}}^{B'} \otimes \overbrace{G_n}^{C'}\overbrace{\ket{0}}^{D'})
+    (\overbrace{\bra{0}}^{A'}\overbrace{G_m^\dagger}^{B'} \otimes \overbrace{\bra{0}}^{C'}\overbrace{G_n^\dagger}^{D'}) \right) \ket{\psi}
+    &amp;(AB)\otimes(CD)=(A\otimes C)(B\otimes D) \\
+    &amp;= \Big( \bra{\psi} (G_m \otimes G_n) (\ket{0} \otimes \ket{0})\Big)\Big((\bra{0} \otimes \bra{0}) (G_m^\dagger \otimes G_n^\dagger) \ket{\psi} \Big)
+    &amp;(A'B')\otimes(C'D')=(A'\otimes C')(B'\otimes D') \\
+    &amp;= \lvert \bra{00} G_m^\dagger \otimes G_n^\dagger \ket{\psi} \rvert^2
+\end{align}\]
+
+<p>The choice $\ket{\star} = G_\star \ket{0}$ is arbitrary.
+It could have been $\ket{\star}=G_\star\ket{1}$ and the result would
+still be similar.</p>
+
+<p>The main point is that given a 2-qubits state $\ket{\psi}$
+we just need to apply the gate $G_m^\dagger$ to the first qubit
+and the gate $G_n^\dagger$ to the second
+qubit then measure in the standard basis.
+If we had 3 qubits with $\sigma^{(o)}$ as the third observable acting
+on the third qubit, then we would apply gate $G_o^\dagger$ to
+the third qubit. And so on.</p>
+
+<!-- In general, given a multi-qubits Hamiltonian with spectral decomposition
+$H = \sum_{r=0}^{2^k-1} \left(\prod_{k} \lambda_r^{(k)} \bigotimes_{k} P^{(k)}_r\right)$
+where $P^{(k)} = G_k\ket{0_k}\bra{0_k}G_k^\dagger$, the probability of measuring
+eigenvalue $\lambda_r = \prod_k \lambda_r^{(k)}$ is given by:
+
+
+$$
+p(\lambda_r) = \Bigg\lvert \bra{\star}^{\otimes k} \Big(\bigotimes_k G_k^{\dagger}\Big) \ket{\psi} \Bigg\rvert^2
+$$
+
+
+Where $\bra{\star} = \bra{0}$ or $\bra{\star} = \bra{1}$.
+
+We therefore conclude that the circuit to perform a measurement
+of the $H = \bigotimes_{k} \sigma_{k}^{(l)}$ observable
+given a state $\ket{\psi}$ is given by the circuit that follows: -->
+
+<div class="figure">
+    <img src="/assets/images/vqe/generalized-measurements.png" style="width: 30%; height: auto; display: block; margin: 0 auto">
+    <div class="caption">
+        <span class="caption-label">Measurement of the
+        $H= \sigma^{(m)} \otimes \sigma^{(n)} \otimes \sigma^{(o)}$ observable:</span>
+        we apply the corresponding changing of basis gates to each
+        qubit indexed by the observable.
+    </div>
+</div>
+
+<ul>
+  <li>
+<strong>Example 1: measurement of $H = \sigma^{(x)} \otimes \sigma^{(z)}$</strong><br>
+As a first example, we will measure $H = \sigma^{(x)} \otimes \sigma^{(z)}$
+with respect to one of its ground states.</li>
+</ul>
+
+<p>So let’s start by finding the eigenvalues and eigenvectors of $H$.
+As the number of qubits increases, it gets difficult to do the calculations
+manually. That’s why we will use Numpy to do the calculation for us.</p>
+
+<div class="figure">
+
+  <figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">import</span> <span class="nn">numpy.linalg</span> <span class="k">as</span> <span class="n">la</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">"__main__"</span><span class="p">:</span>
+    <span class="n">H</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">matrix</span><span class="p">([</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">,</span>  <span class="mi">1</span><span class="p">,</span>  <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">1</span><span class="p">,</span>  <span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>  <span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">]</span>
+    <span class="p">])</span>
+
+    <span class="n">eigvals</span><span class="p">,</span> <span class="n">eigvecs</span> <span class="o">=</span> <span class="n">la</span><span class="p">.</span><span class="n">eig</span><span class="p">(</span><span class="n">H</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">eigvals</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">eigvecs</span><span class="p">)</span></code></pre></figure>
+
+  <div class="caption">
+    <span class="caption-label">
+        Eigenvalues and eigenvectors of $H = \sigma^{(x)} \otimes \sigma^{(z)}$:
+    </span>
+    we find that $H$ has a degenerate ground state energy,
+    that is there are two states with the same ground state energy $-1$.
+</div>
+</div>
+
+<p>We therefore see that $H$ has the following eigenvalues and eigenvectors:</p>
+
+<ol>
+  <li>Eigenvalue $-1$ has eigenvectors:
+    <ul>
+      <li>$\dfrac{1}{\sqrt{2}} \begin{bmatrix} 1 &amp; 0 &amp; -1 &amp; 0\end{bmatrix}^\intercal$</li>
+      <li>$\dfrac{1}{\sqrt{2}} \begin{bmatrix} 0 &amp; 1 &amp; 0 &amp; 1\end{bmatrix}^\intercal$</li>
+    </ul>
+  </li>
+  <li>Eigenvalue $+1$ has eigenvectors:
+    <ul>
+      <li>$\dfrac{1}{\sqrt{2}} \begin{bmatrix} 1 &amp; 0 &amp; 1 &amp; 0\end{bmatrix}^\intercal$</li>
+      <li>$\dfrac{1}{\sqrt{2}} \begin{bmatrix} 0 &amp; -1 &amp; 0 &amp; 1\end{bmatrix}^\intercal$</li>
+    </ul>
+  </li>
+</ol>
+
+<p>Therefore, should we prepare the state
+$\ket{\psi} = \dfrac{1}{\sqrt{2}} \begin{bmatrix} 1 &amp; 0 &amp; -1 &amp; 0\end{bmatrix}^\intercal = \dfrac{1}{\sqrt{2}}(\ket{00}-\ket{10})$,
+we should expect to measure eigenvalue $-1$ with probability $1$.
+The circuit that prepares that state and performs the measurement
+of $H$ against that state follows:</p>
+
+<div class="figure">
+    <img src="/assets/images/vqe/xz-groundstate.png" style="width: 45%; height: auto; display: block; margin: 0 auto">
+    <div class="caption">
+        <span class="caption-label">Measurement of $H = \sigma^{(x)} \otimes \sigma^{(z)}$
+        against the state $\ket{\psi} = \dfrac{1}{\sqrt{2}}(\ket{00}-\ket{10})$:</span>
+        the gates before the zigzag lines correspond to the state preparation.
+        The gates afterwards correspond to the change of basis before
+        performing the measurement in the standard basis.<br>
+        <i>A simplification would result in cancellation of two $H$ gates
+        acting on the first qubits. They are left for the purpose of
+        clarity and completeness.</i>
+    </div>
+</div>
+
+<p>The code that follows implements the circuit above.
+The regular <code class="language-plaintext highlighter-rouge">measure()</code> function shows the implementation
+using PennyLane facilities.
+The <code class="language-plaintext highlighter-rouge">custom_measure()</code> does the implementation as per the
+figure above.</p>
+
+<div class="figure">
+
+  <figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">pennylane</span> <span class="k">as</span> <span class="n">qml</span>
+
+<span class="n">dev</span> <span class="o">=</span> <span class="n">qml</span><span class="p">.</span><span class="n">device</span><span class="p">(</span>
+    <span class="s">"default.qubit"</span><span class="p">,</span>
+    <span class="n">wires</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">shots</span> <span class="o">=</span> <span class="mi">10000</span>
+<span class="p">)</span>
+
+<span class="o">@</span><span class="n">qml</span><span class="p">.</span><span class="n">qnode</span><span class="p">(</span><span class="n">dev</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">measure</span><span class="p">():</span>
+    <span class="s">"""Measurement of the XZ observable
+    using facilities provided by PennyLane.
+    """</span>
+    <span class="c1"># Prepare the state
+</span>    <span class="n">qml</span><span class="p">.</span><span class="n">PauliZ</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">Hadamard</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># Perform the measurement
+</span>    <span class="c1"># The @ operator calculates the tensor product
+</span>    <span class="k">return</span> <span class="n">qml</span><span class="p">.</span><span class="n">counts</span><span class="p">(</span><span class="n">qml</span><span class="p">.</span><span class="n">PauliX</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">@</span> <span class="n">qml</span><span class="p">.</span><span class="n">PauliZ</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="o">@</span><span class="n">qml</span><span class="p">.</span><span class="n">qnode</span><span class="p">(</span><span class="n">dev</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">custom_measure</span><span class="p">():</span>
+    <span class="s">"""
+    """</span>
+    <span class="c1"># Prepare the state
+</span>    <span class="n">qml</span><span class="p">.</span><span class="n">PauliZ</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">Hadamard</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+    
+    <span class="c1"># Perform a change of basis
+</span>    <span class="n">qml</span><span class="p">.</span><span class="n">Hadamard</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># Measure in standard basis
+</span>    <span class="k">return</span> <span class="n">qml</span><span class="p">.</span><span class="n">counts</span><span class="p">(</span><span class="n">qml</span><span class="p">.</span><span class="n">PauliZ</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">@</span> <span class="n">qml</span><span class="p">.</span><span class="n">PauliZ</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">"__main__"</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">measure</span><span class="p">())</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">custom_measure</span><span class="p">())</span></code></pre></figure>
+
+  <div class="caption">
+    <span class="caption-label">Measurement of $H$:</span>
+    Both <code>measure()</code> and <code>custom_measure()</code>
+    should yield eigenvalue $-1$ with probability $1$.
+</div>
+</div>
+
+<div class="figure figure-alert" style="margin-top: 10px">
+<div class="caption">
+    <div class="caption-label">
+        Exercise
+    </div>
+    The reader is encouraged to find the circuits that prepare the remaining
+    $3$ eigenvectors and verify that the corresponding eigenvalues
+    are computed with the predicted probability of $100\%$.
+</div>
+</div>
+
+<ul>
+  <li>
+<strong>Example 2: measurement of $H = \sigma^{(z)} \otimes \sigma^{(i)}$</strong><br>
+For our second example, we will measure $H = \sigma^{(z)} \otimes \sigma^{(i)}$
+with respect to one of its ground states.</li>
+</ul>
+
+<p>The eigenvalues and eigenvectors are calculated as before and are found to be:</p>
+
+<ol>
+  <li>Eigenvalue $-1$ has eigenvectors:
+    <ul>
+      <li>$\dfrac{1}{\sqrt{2}} \begin{bmatrix} 0 &amp; 1 &amp; 0 &amp; 0\end{bmatrix}^\intercal$</li>
+      <li>$\dfrac{1}{\sqrt{2}} \begin{bmatrix} 0 &amp; 0 &amp; 0 &amp; 1\end{bmatrix}^\intercal$</li>
+    </ul>
+  </li>
+  <li>Eigenvalue $+1$ has eigenvectors:
+    <ul>
+      <li>$\dfrac{1}{\sqrt{2}} \begin{bmatrix} 1 &amp; 0 &amp; 0 &amp; 0\end{bmatrix}^\intercal$</li>
+      <li>$\dfrac{1}{\sqrt{2}} \begin{bmatrix} 0 &amp; 0 &amp; 1 &amp; 0\end{bmatrix}^\intercal$</li>
+    </ul>
+  </li>
+</ol>
+
+<p>We will prepare $\ket{\psi} = \dfrac{1}{\sqrt{2}} \begin{bmatrix} 0 &amp; 0 &amp; 0 &amp; 1\end{bmatrix}^\intercal = \dfrac{1}{\sqrt{2}} \ket{11}$
+and measure $H$ against that state.</p>
+
+<p>The circuit that prepares $\ket{\psi}$ and measures $H$ against that
+state is in the figure that follows:</p>
+
+<div class="figure">
+    <img src="/assets/images/vqe/zi-groundstate.png" style="width: 30%; height: auto; display: block; margin: 0 auto">
+    <div class="caption">
+        <span class="caption-label">Measurement of $H = \sigma^{(z)} \otimes \sigma^{(i)}$
+        against the state $\ket{\psi} = \ket{11}$:</span>
+        we need only measure the first qubit. This is equivalent
+        to measuring both qubits in the standard basis.
+    </div>
+</div>
+
+<p>The code that follows implements the figure above.
+Notice how we don’t tensor $\sigma^{(z)}$ with $\sigma^{(i)}$
+in the code. We just perform a measurement on the first qubit.</p>
+
+<div class="figure">
+
+  <figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">pennylane</span> <span class="k">as</span> <span class="n">qml</span>
+
+<span class="n">dev</span> <span class="o">=</span> <span class="n">qml</span><span class="p">.</span><span class="n">device</span><span class="p">(</span>
+    <span class="s">"default.qubit"</span><span class="p">,</span>
+    <span class="n">wires</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">shots</span> <span class="o">=</span> <span class="mi">10000</span>
+<span class="p">)</span>
+
+<span class="o">@</span><span class="n">qml</span><span class="p">.</span><span class="n">qnode</span><span class="p">(</span><span class="n">dev</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">measure</span><span class="p">():</span>
+    <span class="s">"""Measurement of the ZI observable
+    using facilities provided by PennyLane.
+    """</span>
+    <span class="c1"># Prepare the state
+</span>    <span class="n">qml</span><span class="p">.</span><span class="n">PauliX</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">PauliX</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Perform the measurement
+</span>    <span class="k">return</span> <span class="n">qml</span><span class="p">.</span><span class="n">counts</span><span class="p">(</span><span class="n">qml</span><span class="p">.</span><span class="n">PauliZ</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">"__main__"</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">measure</span><span class="p">())</span></code></pre></figure>
+
+  <div class="caption">
+    <span class="caption-label">Measurement of $H$:</span>
+    we only need to measure the first qubit when handed a Hamiltonian
+    where there is a tensor with the identity.
+</div>
+</div>
+
+<div class="figure figure-alert" style="margin-top: 10px">
+<div class="caption">
+    <div class="caption-label">
+        Exercise
+    </div>
+    The reader is encouraged to find the circuits that prepare the remaining
+    $3$ eigenvectors and verify that the corresponding eigenvalues
+    are computed with the predicted probability of $100\%$.
+</div>
+</div>
+
+<h3 id="expectation-values">
+<a class="anchor" href="#expectation-values" aria-hidden="true"><span class="octicon octicon-link"></span></a>Expectation values</h3>
+<p>From equation $(\href{#mjx-eqn:2}{2})$ we note that measurements in quantum mechanics are
+inherently probabilistic in nature. That means we need to make multiple
+measurements in order to make coherent conclusions.</p>
+
+<p>The fact that measurements are probablistic also means that we can
+calculate quantities such as moments of the probability distribution we get.
+Of particular interest we want to know the expectation value of the observale
+of interest.<br>
+In more words, given a state $\ket{\psi}$ and an observable $H$,
+we will generally want to know the expectation value ($i.e.$ average)
+of the eigenvalues ($i.e.$ energies since we have a Hamiltonian)
+with respect to that state.</p>
+
+<p>In other words, we can’t really measure in one measuremement the energy
+of the system but we can only try to find the average.
+If the state against which we are making measurements happens
+to be an eigenvector of the Hamiltonian then after a sufficient
+number of measurements we will approach the true eigenvalue
+(that is the true energy of the system) with respect to that state.</p>
+
+<p>So how do we find the average energy of a Hamiltonian given a state?
+From basic probability theory, the average is simply the sum of
+the measured energies times the probability of obtaining that specific energy.</p>
+
+\[\begin{align}
+    \mathbb{E}(H) &amp; = \sum_{i} \lambda_i p(\lambda_i) \\
+    &amp; = \sum_{i} \lambda_i \bra{\psi} P_i \ket{\psi} \\
+    &amp; = \bra{\psi} \left( \sum_{i} \lambda_i P_i \right) \ket{\psi} \\
+    &amp; = \bra{\psi} H \ket{\psi}
+\end{align}\]
+
+<p>As a notational convenience, we will adopt:</p>
+
+\[\braket{H} = \mathbb{E}(H) = \bra{\psi} H \ket{\psi} \tag{3}\]
+
+<p>Using equation $(1’)$ for the expansion in the Hamiltonian
+eigenbasis, we obtain:</p>
+
+\[\begin{align}
+    \braket{H} &amp; = \bra{\psi} H \ket{\psi} \\
+    &amp; = \bra{\psi} \left( \sum_{i} \lambda_i \ket{\lambda_i}
+    \bra{\lambda_i} \right) \ket{\psi} \\
+    &amp; = \sum_{i} \lambda_i \braket{\psi \\|\lambda_i}
+    \braket{\lambda_i\\|\psi} \\
+    &amp; = \sum_{i} \lambda_i \braket{\psi\\|\lambda_i}
+    \braket{\psi\\|\lambda_i}^* \\
+    &amp; = \sum_{i} \lambda_i \lvert\braket{\psi\\|\lambda_i}\rvert^{2}
+\end{align}\]
+
+<p>Therefore if we are given a state $\ket{\psi}$ and the eigendecomposition
+of $H$, we can find the expectation value using:</p>
+
+\[\braket{H} = \sum_{i} \lambda_i \lvert\braket{\psi\\|\lambda_i}\rvert^{2}
+= \sum_{i} \lambda_i p(\lambda_i) \tag{3'}\]
+
+<p>If the observable is of the form $H = \sum_i h_i H_i$ then the expectation value of $H$
+is easily verified to be given by:</p>
+
+\[\braket{H} = \sum_i h_i \braket{H_i} \tag{4}\]
+
+<h4 id="example-1-expectation-value-of-h--sigmax">Example 1: expectation value of $H = \sigma^{(x)}$</h4>
+<p>We quickly confirm that if we prepare the ground state
+of $\sigma^{(x)}$, the expectation value will correspond
+to the ground state energy of $\sigma^{(x)}$ since
+we will obtain the ground state energy $-1$ with probability $1$</p>
+
+<div class="figure">
+
+  <figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">pennylane</span> <span class="k">as</span> <span class="n">qml</span>
+
+<span class="n">dev</span> <span class="o">=</span> <span class="n">qml</span><span class="p">.</span><span class="n">device</span><span class="p">(</span>
+    <span class="s">"default.qubit"</span><span class="p">,</span>
+    <span class="n">wires</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">shots</span> <span class="o">=</span> <span class="mi">100000</span>
+<span class="p">)</span>
+
+<span class="o">@</span><span class="n">qml</span><span class="p">.</span><span class="n">qnode</span><span class="p">(</span><span class="n">dev</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">expval</span><span class="p">():</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">PauliX</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">Hadamard</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">qml</span><span class="p">.</span><span class="n">expval</span><span class="p">(</span><span class="n">qml</span><span class="p">.</span><span class="n">PauliX</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">"__main__"</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">expval</span><span class="p">())</span> <span class="c1"># should print -1</span></code></pre></figure>
+
+  <div class="caption">
+    <span class="caption-label">Measurement of $H = \sigma^{(x)}$:</span>
+    the circuit prepare the ground state of $H = \sigma^{(x)}$
+    therefore the expectation value will be the ground state
+    energy.
+</div>
+</div>
+
+<h4 id="example-2-expectation-value-of-h--dfrac1sqrt2leftsigmaxsigmazright">Example 2: expectation value of $H = \dfrac{1}{\sqrt{2}}\left(\sigma^{(x)}+\sigma^{(z)}\right)$</h4>
+<p>A quick calculation shows that $H$ has the following eigendecomposition:</p>
+
+<ol>
+  <li>Eigenvalue $-1$ with eigenvector $\dfrac{1}{\sqrt{4+2\sqrt{2}}} \begin{bmatrix} 1-\sqrt{2} \\ 1\end{bmatrix}$</li>
+  <li>Eigenvalue $+1$ with eigenvector $\dfrac{1}{\sqrt{4+2\sqrt{2}}} \begin{bmatrix} 1+\sqrt{2} \\ 1\end{bmatrix}$</li>
+</ol>
+
+<p>Unlike the previous examples, it is not clear how to prepare the ground state by inspection.
+So we can’t readily generate a circuit and compute the expectation value that
+would result in the ground state energy.</p>
+
+<div class="figure figure-alert figure-info" style="margin-top: 10px">
+<div class="caption">
+    <div class="caption-label">
+        The ground state is generally unkown
+    </div>
+    If we knew the ground state, we would not need VQE because
+    computing the ground state energy would simply amount to
+    preparing the ground state and measuring the expectation
+    value of the Hamiltonian with respect to the prepared
+    state.
+</div>
+</div>
+
+<p>So we will prepare some generic state and measure the expectation value
+with respect to that state. The result is not important, it is how
+we achieve that result that’s important.</p>
+
+<p><em>Note: PennyLane doesn’t exactly make it possible to iterate</em>
+<em>through the counts we get upon measurement so it is not easy</em>
+<em>for us to manually compute the expectation value according</em>
+<em>to equation $(\href{#mjx-eqn:3’}{3’})$.</em>
+<em>We will directly use their provided function for computing</em>
+<em>the expectation value and do a simple sanity check.</em></p>
+
+<p>In the code that follows, we compute the expectation value
+according to equation $(\href{#mjx-eqn:4}{4})$ then ask PennyLane do the same
+calculation for us and compare the result.</p>
+
+<p>The sanity check depends on the fact that PennyLane
+already has our observable $H$ as the $Hadamard$ observable.</p>
+
+<div class="figure">
+
+  <figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">pennylane</span> <span class="k">as</span> <span class="n">qml</span>
+<span class="kn">from</span> <span class="nn">pennylane</span> <span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+
+<span class="c1"># We fix the seed to make results reproducible
+</span><span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">dev</span> <span class="o">=</span> <span class="n">qml</span><span class="p">.</span><span class="n">device</span><span class="p">(</span>
+    <span class="s">"default.qubit"</span><span class="p">,</span>
+    <span class="n">wires</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="c1"># We request the exact expectation value by not setting shots
+</span>    <span class="n">shots</span> <span class="o">=</span> <span class="bp">None</span>
+<span class="p">)</span>
+
+<span class="o">@</span><span class="n">qml</span><span class="p">.</span><span class="n">qnode</span><span class="p">(</span><span class="n">dev</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">x_expval</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">RY</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">qml</span><span class="p">.</span><span class="n">expval</span><span class="p">(</span><span class="n">qml</span><span class="p">.</span><span class="n">PauliX</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+<span class="o">@</span><span class="n">qml</span><span class="p">.</span><span class="n">qnode</span><span class="p">(</span><span class="n">dev</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">z_expval</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">RY</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">qml</span><span class="p">.</span><span class="n">expval</span><span class="p">(</span><span class="n">qml</span><span class="p">.</span><span class="n">PauliZ</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">h_expval</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">np</span><span class="p">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">x_expval</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">+</span> <span class="n">z_expval</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+
+<span class="o">@</span><span class="n">qml</span><span class="p">.</span><span class="n">qnode</span><span class="p">(</span><span class="n">dev</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">hadamard_expval</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">RY</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">qml</span><span class="p">.</span><span class="n">expval</span><span class="p">(</span><span class="n">qml</span><span class="p">.</span><span class="n">Hadamard</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">"__main__"</span><span class="p">:</span>
+    <span class="n">custom_expval</span> <span class="o">=</span> <span class="n">h_expval</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">pi</span><span class="p">)</span>
+    <span class="n">builtin_expval</span> <span class="o">=</span> <span class="n">hadamard_expval</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">pi</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">custom_expval</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">builtin_expval</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">custom_expval</span> <span class="o">==</span> <span class="n">builtin_expval</span><span class="p">)</span> <span class="c1"># should print True</span></code></pre></figure>
+
+  <div class="caption">
+    <span class="caption-label">
+        Expectation value of $H = \dfrac{1}{\sqrt{2}}\left(\sigma^{(x)}+\sigma^{(z)}\right)$:
+    </span>
+    we see a confirmation of equation $(\href{#mjx-eqn:4}{4})$ since both
+    <code>custom_expval</code> and <code>builtin_expval</code>
+    contain the same value.
+</div>
+</div>
+
+<h4 id="example-3-expectation-value-of-h--sigmax-otimes-sigmaz--sigmai-otimes-sigmaz">Example 3: expectation value of $H = \sigma^{(x)} \otimes \sigma^{(z)} + \sigma^{(i)} \otimes \sigma^{(z)}$</h4>
+<p>It is easily and quickly verified that $H$ has the following eigendecomposition:</p>
+
+<ol>
+  <li>Eigenvalue $-2$ has eigenvector $\dfrac{1}{\sqrt{2}} \begin{bmatrix} 0 &amp; 1 &amp; 0 &amp; 1\end{bmatrix}^\intercal$</li>
+  <li>Eigenvalue $0$ has two eigenvectors:
+    <ul>
+      <li>$\dfrac{1}{\sqrt{2}} \begin{bmatrix} 1 &amp; 0 &amp; -1 &amp; 0\end{bmatrix}^\intercal$</li>
+      <li>$\dfrac{1}{\sqrt{2}} \begin{bmatrix} 0 &amp; -1 &amp; 0 &amp; 1\end{bmatrix}^\intercal$</li>
+    </ul>
+  </li>
+  <li>Eigenvalue $2$ has eigenvector $\dfrac{1}{\sqrt{2}} \begin{bmatrix} 1 &amp; 0 &amp; 1 &amp; 0\end{bmatrix}^\intercal$</li>
+</ol>
+
+<p>Therefore, if we compute the expectation value with respect to the
+state $\ket{\psi} = \dfrac{1}{\sqrt{2}} \left( \ket{01} + \ket{11} \right)$
+we should get the eigenvalue $-2$.
+The code below confirms that.</p>
+
+<div class="figure">
+
+  <figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">pennylane</span> <span class="k">as</span> <span class="n">qml</span>
+
+<span class="n">dev</span> <span class="o">=</span> <span class="n">qml</span><span class="p">.</span><span class="n">device</span><span class="p">(</span>
+    <span class="s">"default.qubit"</span><span class="p">,</span>
+    <span class="n">wires</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="n">shots</span> <span class="o">=</span> <span class="mi">100000</span>
+<span class="p">)</span>
+
+<span class="o">@</span><span class="n">qml</span><span class="p">.</span><span class="n">qnode</span><span class="p">(</span><span class="n">dev</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">xz_expval</span><span class="p">():</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">Hadamard</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">PauliX</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">qml</span><span class="p">.</span><span class="n">expval</span><span class="p">(</span><span class="n">qml</span><span class="p">.</span><span class="n">PauliX</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">@</span> <span class="n">qml</span><span class="p">.</span><span class="n">PauliZ</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="o">@</span><span class="n">qml</span><span class="p">.</span><span class="n">qnode</span><span class="p">(</span><span class="n">dev</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">zi_expval</span><span class="p">():</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">Hadamard</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">PauliX</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">qml</span><span class="p">.</span><span class="n">expval</span><span class="p">(</span><span class="n">qml</span><span class="p">.</span><span class="n">PauliZ</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">h_expval</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">xz_expval</span><span class="p">()</span> <span class="o">+</span> <span class="n">zi_expval</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">"__main__"</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">h_expval</span><span class="p">())</span> <span class="c1"># should print -2</span></code></pre></figure>
+
+  <div class="caption">
+    <span class="caption-label">
+        Expectation value of $H = \sigma^{(x)} \otimes \sigma^{(z)} + \sigma^{(i)} \otimes \sigma^{(z)}$:
+    </span>
+    since we prepared the ground state $\ket{\psi} = \ket{+}\ket{1}$
+    the expectation value yields the ground state energy $-2$.
+</div>
+</div>
+
+<h3 id="the-variational-method">
+<a class="anchor" href="#the-variational-method" aria-hidden="true"><span class="octicon octicon-link"></span></a>The variational method</h3>
+<p>From basic quantum mechanics we know that every system has a lowest
+energy, call it $\lambda_0$.
+We are generally interested in finding that energy.</p>
+
+<p>The variational method allows to find an approximation of that energy.
+The idea is very simple: since $\lambda_0 \le \lambda_i, \forall i$,
+we have the following:</p>
+
+\[\begin{align}
+    \braket{H} &amp; = \sum_{i} \lambda_i \lvert\braket{\psi\\|\lambda_i}\rvert^{2} \\
+    &amp; \ge \sum_{i} \lambda_0 \lvert\braket{\psi\\|\lambda_i}\rvert^{2} \\
+    &amp; = \lambda_0 \sum_{i} \lvert\braket{\psi\\|\lambda_i}\rvert^{2} \\
+    &amp; = \lambda_0 \sum_{i} p(\lambda_i) \\
+    &amp; = \lambda_0
+\end{align}\]
+
+<p>Where $\sum_{i} p(\lambda_i) = 1$ because probabilities must sum
+to $1$ for normalized states.</p>
+
+<p>It follows then that:</p>
+
+\[\braket{H} \ge \lambda_0 \tag{5}\]
+
+<p>Equation $(\href{#mjx-eqn:4}{4})$ is the <em>essence</em> of the variational method.
+It tells us that we can always try to find some state
+that approximates the ground state.
+Our goal therefore is to keep constructing such some state and
+measure until we can’t find a state with a lowest energy
+because we can never find a state with lower energy
+than the ground state energy.
+Then we hope that the state found with lowest energy is
+sufficiently close to the true ground state energy.</p>
+
+<h3 id="the-variational-algorithm">
+<a class="anchor" href="#the-variational-algorithm" aria-hidden="true"><span class="octicon octicon-link"></span></a>The variational algorithm</h3>
+<p>How then do we find the state $\ket{\psi}$ that approximates
+the ground state $\ket{\lambda_0}$? The trick is to parametrize
+$\ket{\psi}$ and then vary those parameters until a particular
+sequence of parameters leads to a state that appromiximates
+the ground state.</p>
+
+<p>In other words we consider a state $\ket{\psi(\vec{\theta})} = U(\vec{\theta})\ket{00\dots0}$
+where $\vec{\theta} = [\theta_{n-1},\theta_{n-2}, \cdots, \theta_0]$
+are the parameters that we will vary until we appromixate the ground
+state. Whence the <em>variational</em> aspect of the algorithm.</p>
+
+<h4 id="problem-statement">Problem statement</h4>
+<p>Let us formaly state the variational problem. This is quite easy:
+find a sequence of parameters $\vec{\theta}$ such that
+$\mathcal{C}(\vec{\theta}) =
+\bra{\psi(\vec{\theta})}H\ket{\psi(\vec{\theta})} \approx \lambda_0$.
+The function $\mathcal{C}(\vec{\theta})$ is usually called the
+<em>cost function</em> or the <em>objective function</em> and our goal is to minimize it.</p>
+
+<p>Mathematically:</p>
+
+\[\underset{\vec{\theta}}{min} \: \mathcal{C}(\vec{\theta}) =
+\underset{\vec{\theta}}{min} \:
+\bra{\psi(\vec{\theta})}H\ket{\psi(\vec{\theta})} \ge \lambda_0\]
+
+<p>That is our goal is to find parameters $\vec{\theta}$ that minimize
+$\mathcal{C}(\vec{\theta})$.</p>
+
+<h4 id="problem-solution">Problem solution</h4>
+<p>In general we will start with some arbitrary instance
+$\ket{\psi} = \ket{\psi(\vec{\theta})}$ where we fix $\vec{\theta}$
+to some values (usually selected randomly).
+Then we will use an <em>optimizer</em> to find new parameters $\vec{\theta}^*$
+such at $\mathcal{C}(\vec{\theta}^*) &lt; \mathcal{C}(\vec{\theta})$.</p>
+
+<p>The process will repeat itself until
+$\mathcal{C}(\vec{\theta}^*) \approx \lambda_0$ at which point
+the optimizer stops and reports the result.</p>
+
+<div class="figure figure-alert figure-warning" style="margin-top: 10px">
+<div class="caption">
+    <div class="caption-label">
+        The optimizer and local minima
+    </div>
+    The description above is a generalization because sometimes
+    the optimizer can get stuck in a local minimum of
+    $\mathcal{C}(\vec{\theta})$ and won't find a value
+    close to $\lambda_0$ but we won't worry about that.
+    Our hope though is that we end up with a value close to $\lambda_0$.
+</div>
+</div>
+
+<p>Each state $\ket{\psi(\vec{\theta})}$ where $\vec{\theta}$ is fixed is called an <em>ansatz</em>.
+We will use circuits that have arbitrary rotations about some axis
+to construct those ansätze. The circuits used to prepare arbitrary
+ansätze are called <em>parametrized quantum circuits</em> ($a.k.a.$ PQCs).
+Without loss of generality, we will use PQC and ansatz interchangeably.</p>
+
+<h4 id="the-algorithm">The algorithm</h4>
+<p>While there will be slight variations in implementations,
+the flow of VQE is quite the same across all implementations.
+We present that flow as an algorithm:</p>
+
+<div class="figure">
+<div class="algorithm">
+    <p><strong><em>Prepare:</em></strong><br>
+$\quad cost(\vec{\theta}) = \bra{\psi(\vec{\theta})}H\ket{\psi(\vec{\theta})}$<br>
+$\quad optimizer = Optimizer()$</p>
+
+    <p><strong><em>Initialize:</em></strong><br>
+$\quad maxiter &gt; 0$<br>
+$\quad iter = 0$<br>
+$\quad \vec{\theta} = rand()$<br>
+$\quad energy = cost(\vec{\theta})$</p>
+
+    <p><strong>while</strong> $iter &lt; maxiter$<strong>:</strong><br>
+$\qquad \vec{\theta}, energy \gets optimizer(cost, \vec{\theta})$<br>
+$\qquad iter \gets iter + 1$</p>
+
+    <p><strong>return</strong> $energy$</p>
+  </div>
+<div class="caption">
+    <span class="caption-label">
+        VQE algorithm:
+    </span>
+    we prepare the cost function as a circuit that calculates
+    the expectation value w.r.t. $\ket{\psi(\vec{\theta})}$, initialize
+    the parameters $\vec{\theta}$ to some random values
+    and let the optimizer take it from there for a maximum
+    number of iterations after which we report the
+    computed energy.
+</div>
+</div>
+
+<h3 id="examples">
+<a class="anchor" href="#examples" aria-hidden="true"><span class="octicon octicon-link"></span></a>Examples</h3>
+<p>Let us work through a couple of examples where we try to find
+their ground state energies. We have calculated those energies
+before, now we use VQE to find the same.</p>
+
+<ul>
+  <li>
+    <p><strong>Ansatz design:</strong><br>
+For both examples, we rely on arbitrary state preparation circuits.
+This means that starting from fiduciary states $\ket{0}$ and $\ket{00}$,
+we create circuits that allow us to generate arbitrary single-qubit and
+two-qubits states.<br>
+The PQC for single-qubit systems is derived in <a href="#single-qubit-state-preparation">single-qubit state preparation</a>.<br>
+And a PQC for two-qubits systems is derived in <a href="#two-qubits-state-preparation">two-qubits state preparation</a>.</p>
+  </li>
+  <li>
+    <p><strong>Optimizer selection:</strong><br>
+We chose the SPSA optimizer because it works out of the box
+without requiring additional knowledge beyond what we have already learned
+thus far. When we look at gradient descent, we will see we require
+the ability to find the gradient of the cost function and we haven’t learned how.</p>
+  </li>
+</ul>
+
+<h4 id="example-1-ground-state-energy-of-h--dfrac1sqrt2leftsigmaxsigmazright">Example 1: ground state energy of $H = \dfrac{1}{\sqrt{2}}\left(\sigma^{(x)}+\sigma^{(z)}\right)$</h4>
+<p>We already know from <a href="#example-2-expectation-value-of-h--dfrac1sqrt2leftsigmaxsigmazright">calculating the expectation value of $H$</a>
+that it has ground state energy $-1$. We just couldn’t manually construct
+the ground state itself.</p>
+
+<p>The code that follows implements VQE as per the algorithm above and it does
+find the ground state energy. We plot the optimization steps in the figure
+that follows the code so we can see the optimizer in action.</p>
+
+<div class="figure">
+
+  <figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">pennylane</span> <span class="k">as</span> <span class="n">qml</span>
+<span class="kn">import</span> <span class="nn">pennylane.numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+<span class="n">dev</span> <span class="o">=</span> <span class="n">qml</span><span class="p">.</span><span class="n">device</span><span class="p">(</span>
+    <span class="s">"default.qubit"</span><span class="p">,</span>
+    <span class="n">wires</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">shots</span> <span class="o">=</span> <span class="mi">100000</span>
+<span class="p">)</span>
+
+<span class="o">@</span><span class="n">qml</span><span class="p">.</span><span class="n">qnode</span><span class="p">(</span><span class="n">dev</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">hadamard_cost</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">RY</span><span class="p">(</span><span class="n">theta</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">PhaseShift</span><span class="p">(</span><span class="n">theta</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">wires</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">qml</span><span class="p">.</span><span class="n">expval</span><span class="p">(</span><span class="n">qml</span><span class="p">.</span><span class="n">Hadamard</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">vqe</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">maxiter</span><span class="p">):</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">qml</span><span class="p">.</span><span class="n">SPSAOptimizer</span><span class="p">(</span><span class="n">maxiter</span> <span class="o">=</span> <span class="n">maxiter</span><span class="p">)</span>
+    <span class="n">energy</span> <span class="o">=</span> <span class="n">cost</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">history</span> <span class="o">=</span> <span class="p">[</span><span class="n">energy</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="nb">iter</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">maxiter</span><span class="p">):</span>
+        <span class="n">theta</span><span class="p">,</span> <span class="n">energy</span> <span class="o">=</span> <span class="n">optimizer</span><span class="p">.</span><span class="n">step_and_cost</span><span class="p">(</span>
+            <span class="n">cost</span><span class="p">,</span>
+            <span class="n">theta</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Print the optimizer progress every 10 steps
+</span>        <span class="k">if</span> <span class="nb">iter</span> <span class="o">%</span> <span class="mi">10</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Step = </span><span class="si">{</span><span class="nb">iter</span><span class="si">}</span><span class="s">,  Energy = </span><span class="si">{</span><span class="n">history</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:.</span><span class="mi">8</span><span class="n">f</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+        
+        <span class="c1"># Save the full energy optimization history
+</span>        <span class="n">history</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">energy</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">energy</span><span class="p">,</span> <span class="n">history</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">"__main__"</span><span class="p">:</span>
+    <span class="c1"># Initialize theta from the normal distribution with mean 0 and spread np.pi
+</span>    <span class="c1"># The last argument is set to 2
+</span>    <span class="c1"># because we need to pass 2 parameters to the cost function
+</span>    <span class="n">init_theta</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="p">.</span><span class="n">pi</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    
+    <span class="c1"># We try 151 iterations
+</span>    <span class="n">maxiter</span> <span class="o">=</span> <span class="mi">151</span>
+
+    <span class="c1"># Run VQE
+</span>    <span class="n">energy</span><span class="p">,</span> <span class="n">history</span> <span class="o">=</span> <span class="n">vqe</span><span class="p">(</span><span class="n">hadamard_cost</span><span class="p">,</span> <span class="n">init_theta</span><span class="p">,</span> <span class="n">maxiter</span><span class="p">)</span>
+
+    <span class="c1"># Print the final energy
+</span>    <span class="k">print</span><span class="p">(</span><span class="n">energy</span><span class="p">)</span>
+
+    <span class="c1"># Plot the optimization history
+</span>    <span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+    <span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">maxiter</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">history</span><span class="p">,</span> <span class="s">"go"</span><span class="p">,</span> <span class="n">ls</span> <span class="o">=</span> <span class="s">"dashed"</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s">"Energy"</span><span class="p">)</span>
+    <span class="n">plt</span><span class="p">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">"Optimization step"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">13</span><span class="p">)</span>
+    <span class="n">plt</span><span class="p">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">"Energy"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">13</span><span class="p">)</span>
+    <span class="n">plt</span><span class="p">.</span><span class="n">show</span><span class="p">()</span></code></pre></figure>
+
+  <div class="caption">
+    <span class="caption-label">
+        Ground state energy of $H = \dfrac{1}{\sqrt{2}}\left(\sigma^{(x)}+\sigma^{(z)}\right)$:
+    </span>
+    while we may not get exactly $-1$, we will get comfortably close to it.
+</div>
+</div>
+
+<p>We can see how the optimizer gets closer to the ground state energy
+even though the initial energy estimation is not too far away from the true
+energy:</p>
+
+<div class="figure">
+
+  <figure class="highlight"><pre><code class="language-text" data-lang="text">Step = 0,  Energy = -0.84014000
+Step = 10,  Energy = -0.92522000
+Step = 20,  Energy = -0.96302000
+Step = 30,  Energy = -0.97982000
+Step = 40,  Energy = -0.98670000
+Step = 50,  Energy = -0.99214000
+Step = 60,  Energy = -0.99522000
+Step = 70,  Energy = -0.99638000
+Step = 80,  Energy = -0.99744000
+Step = 90,  Energy = -0.99860000
+Step = 100,  Energy = -0.99874000
+Step = 110,  Energy = -0.99902000
+Step = 120,  Energy = -0.99922000
+Step = 130,  Energy = -0.99936000
+Step = 140,  Energy = -0.99960000
+Step = 150,  Energy = -0.99970000</code></pre></figure>
+
+  <div class="caption">
+    <span class="caption-label">
+        Optimization evolution every 10 steps:
+    </span>
+    sometimes we will start close to the true ground state energy,
+    other times not. But we clearly see the optimizer converging
+    towards the true ground state energy.
+</div>
+</div>
+
+<p>The plot generated by the code above should help drive
+home the point of how VQE works:</p>
+
+<div class="figure">
+    <img src="/assets/images/vqe/h-vqe.png" style="width: 80%; height: auto; display: block; margin: 0 auto">
+    <div class="caption">
+        <span class="caption-label">VQE optimization landscape for
+        $H = \dfrac{1}{\sqrt{2}}\left(\sigma^{(x)}+\sigma^{(z)}\right)$:</span>
+        we can clearly see the optimizer approaching the true ground state energy
+        of our Hamiltonian $H$.
+    </div>
+</div>
+
+<h4 id="example-2-ground-state-energy-of-h--sigmax-otimes-sigmaz--sigmai-otimes-sigmaz">Example 2: ground state energy of $H = \sigma^{(x)} \otimes \sigma^{(z)} + \sigma^{(i)} \otimes \sigma^{(z)}$</h4>
+<p>The procedure is pretty much the same as with the Hadamard
+observable, except we will make use of equation $(\href{#mjx-eqn:4}{4})$
+since we will calculate the ground state energies of
+$\sigma^{(x)} \otimes \sigma^{(z)}$ and $\sigma^{(i)} \otimes \sigma^{(z)}$
+separately.</p>
+
+<p>Without further ado, here is the code:</p>
+
+<div class="figure">
+
+  <figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">pennylane</span> <span class="k">as</span> <span class="n">qml</span>
+<span class="kn">import</span> <span class="nn">pennylane.numpy</span> <span class="k">as</span> <span class="n">np</span>
+
+<span class="n">dev</span> <span class="o">=</span> <span class="n">qml</span><span class="p">.</span><span class="n">device</span><span class="p">(</span>
+    <span class="s">"default.qubit"</span><span class="p">,</span>
+    <span class="n">wires</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="n">shots</span> <span class="o">=</span> <span class="mi">100000</span>
+<span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">ansatz</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">RY</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">wires</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">PhaseShift</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">wires</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">CRY</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">wires</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">ControlledPhaseShift</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">-</span> <span class="n">params</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">wires</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">CRY</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">wires</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">PauliX</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">ControlledPhaseShift</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">-</span> <span class="n">params</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">wires</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">qml</span><span class="p">.</span><span class="n">PauliX</span><span class="p">(</span><span class="n">wires</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="o">@</span><span class="n">qml</span><span class="p">.</span><span class="n">qnode</span><span class="p">(</span><span class="n">dev</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">xz_cost</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+    <span class="n">ansatz</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">qml</span><span class="p">.</span><span class="n">expval</span><span class="p">(</span><span class="n">qml</span><span class="p">.</span><span class="n">PauliX</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">@</span> <span class="n">qml</span><span class="p">.</span><span class="n">PauliZ</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="o">@</span><span class="n">qml</span><span class="p">.</span><span class="n">qnode</span><span class="p">(</span><span class="n">dev</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">iz_cost</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+    <span class="n">ansatz</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">qml</span><span class="p">.</span><span class="n">expval</span><span class="p">(</span><span class="n">qml</span><span class="p">.</span><span class="n">PauliZ</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">vqe</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">maxiter</span><span class="p">):</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">qml</span><span class="p">.</span><span class="n">SPSAOptimizer</span><span class="p">(</span><span class="n">maxiter</span> <span class="o">=</span> <span class="n">maxiter</span><span class="p">)</span>
+    <span class="n">energy</span> <span class="o">=</span> <span class="n">cost</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+    <span class="n">history</span> <span class="o">=</span> <span class="p">[</span><span class="n">energy</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="nb">iter</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">maxiter</span><span class="p">):</span>
+        <span class="n">params</span><span class="p">,</span> <span class="n">energy</span> <span class="o">=</span> <span class="n">optimizer</span><span class="p">.</span><span class="n">step_and_cost</span><span class="p">(</span>
+            <span class="n">cost</span><span class="p">,</span>
+            <span class="n">params</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Print the optimizer progress every 40 steps
+</span>        <span class="k">if</span> <span class="nb">iter</span> <span class="o">%</span> <span class="mi">40</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Step = </span><span class="si">{</span><span class="nb">iter</span><span class="si">}</span><span class="s">,  Energy = </span><span class="si">{</span><span class="n">history</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:.</span><span class="mi">8</span><span class="n">f</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+        
+        <span class="c1"># Save the full energy optimization history
+</span>        <span class="n">history</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">energy</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">energy</span><span class="p">,</span> <span class="n">history</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">"__main__"</span><span class="p">:</span>
+    <span class="c1"># Initialize params from the normal distribution with mean 0 and variance np.pi
+</span>    <span class="n">init_params</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="p">.</span><span class="n">pi</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+    
+    <span class="c1"># We try 401 iterations
+</span>    <span class="n">maxiter</span> <span class="o">=</span> <span class="mi">401</span>
+
+    <span class="c1"># Run VQE
+</span>    <span class="k">print</span><span class="p">(</span><span class="s">"Optimizer progress for the XZ observable:"</span><span class="p">)</span>
+    <span class="n">xz_energy</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">vqe</span><span class="p">(</span><span class="n">xz_cost</span><span class="p">,</span> <span class="n">init_params</span><span class="p">,</span> <span class="n">maxiter</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">"</span><span class="se">\n</span><span class="s">Optimizer progress for the IZ observable:"</span><span class="p">)</span>
+    <span class="n">iz_energy</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">vqe</span><span class="p">(</span><span class="n">iz_cost</span><span class="p">,</span> <span class="n">init_params</span><span class="p">,</span> <span class="n">maxiter</span><span class="p">)</span>
+
+    <span class="c1"># Print the final energy
+</span>    <span class="n">energy</span> <span class="o">=</span> <span class="n">xz_energy</span> <span class="o">+</span> <span class="n">iz_energy</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">"</span><span class="se">\n</span><span class="s">Final energy:"</span><span class="p">,</span> <span class="n">energy</span><span class="p">)</span></code></pre></figure>
+
+  <div class="caption">
+    <span class="caption-label">
+        Ground state energy of $H = \sigma^{(x)} \otimes \sigma^{(z)} + \sigma^{(i)} \otimes \sigma^{(z)}$:
+    </span>
+    we should expect to get an energy close to $-2$.
+</div>
+</div>
+
+<p>And here is a sample run on my machine:</p>
+
+<div class="figure">
+
+  <figure class="highlight"><pre><code class="language-text" data-lang="text">Optimizer progress for the XZ observable:
+Step = 0,  Energy = 0.81258000
+Step = 40,  Energy = 0.38758000
+Step = 80,  Energy = 0.04470000
+Step = 120,  Energy = -0.10830000
+Step = 160,  Energy = -0.25992000
+Step = 200,  Energy = -0.51630000
+Step = 240,  Energy = -0.72498000
+Step = 280,  Energy = -0.80484000
+Step = 320,  Energy = -0.88252000
+Step = 360,  Energy = -0.90248000
+Step = 400,  Energy = -0.93032000
+
+Optimizer progress for the IZ observable:
+Step = 0,  Energy = -0.63556000
+Step = 40,  Energy = -0.93758000
+Step = 80,  Energy = -0.97082000
+Step = 120,  Energy = -0.97892000
+Step = 160,  Energy = -0.98604000
+Step = 200,  Energy = -0.98908000
+Step = 240,  Energy = -0.99122000
+Step = 280,  Energy = -0.99288000
+Step = 320,  Energy = -0.99420000
+Step = 360,  Energy = -0.99448000
+Step = 400,  Energy = -0.99518000
+
+Final energy: -1.92782</code></pre></figure>
+
+  <div class="caption">
+    <span class="caption-label">
+        Optimization evolution every 40 steps and final energy:
+    </span>
+    while we didn't get exactly $-2$, we got pretty close to it.
+</div>
+</div>
+
+<h3 id="next-steps">
+<a class="anchor" href="#next-steps" aria-hidden="true"><span class="octicon octicon-link"></span></a>Next steps</h3>
+<p>The reader who just wanted to get the basics and play a little
+should free to stop here.</p>
+
+<p>Even if the reader just wanted to get the basics, they are encouraged
+to read the final section on practical considerations
+so they understand the limitations of VQE, especially
+the <em>measurement problem</em>.</p>
+
+<p>For the reader that wants to delve a
+little deeper, the sections that follow elaborate on ways
+ansätze are designed, what choices of optimizers we have,
+and a few ways we have to reduce the number of measurements.</p>
+
+<h2 id="ansatz-design">
+<a class="anchor" href="#ansatz-design" aria-hidden="true"><span class="octicon octicon-link"></span></a>Ansatz design</h2>
+<p>Designing an ansatz is certainly no easy task.
+Building up on the work already done, ansätze can be classified
+into fixed structure or adaptive structure ansätze, see <a class="citation" href="#Tilly_2022">(Tilly et al., 2022)</a>.</p>
+
+<p>The software engineer will generally experiment with various ansätze
+for a specific problem via educated guessing.<br>
+And when appropriate build upon existing ansätze.</p>
+
+<p>Fixed structure ansätze are those where the circuit structure doesn’t change
+between optimization phases. In adaptive strucutre ansätze, the circuit
+structure changes as the circuit structure is adapted to the problem
+being solved.</p>
+
+<p>Since this article is meant to serve as an introduction to VQE,
+we won’t bother about adaptive structure ansätze;
+we discuss only fixed structure ansätze.<br>
+Moreover, even in fixed structure ansätze, we will try
+to restrict ourselves to ansätze that a software engineer can tackle.</p>
+
+<p>In fixed structure ansätze, <em>I</em> do the following classification:</p>
+<ol>
+  <li>Physics inspired ansätze.</li>
+  <li>Hardware inspired ansätze.</li>
+  <li>Mathematics inspired ansätze.</li>
+</ol>
+
+<h3 id="physics-inspired-ansätze">
+<a class="anchor" href="#physics-inspired-ans%C3%A4tze" aria-hidden="true"><span class="octicon octicon-link"></span></a>Physics inspired ansätze</h3>
+<p>In physics inspired ansätze, we try to use information about the problem
+and decide how best to tailor the ansatz such that we can efficiently
+search the Hilbert space.</p>
+
+<p>There are two ansätze that have featured prominently with applications
+in quantum chemistry and condensed matter physics.</p>
+
+<p>Since we are software engineers,
+it is not worth our while to study these ansätze in detail,
+it is sufficient to know they exist.</p>
+
+<h4 id="unitary-coupled-cluster-ucc-ansatz">Unitary coupled cluster (UCC) ansatz</h4>
+<p>This is the ansatz that was used in the original work on VQE <a class="citation" href="#Peruzzo_2014">(Peruzzo et al., 2014)</a>.
+It comes from <a href="https://en.wikipedia.org/wiki/Coupled_cluster">coupled cluster theory</a>
+for studying many-body systems and has found many uses in <em>ab initio</em> quantum
+chemistry.</p>
+
+<h4 id="hamiltonian-variational-ansatz-hva">Hamiltonian variational ansatz (HVA)</h4>
+<p>The Hamiltonian variational ansatz builds upon the Hamiltonian
+to be studied. The circuit is built by taking the exponential
+of commuting terms in the Hamiltonian.
+That procedure gives us unitaries that can be decomposed
+into gates.</p>
+
+<p>The paper that proposed this ansatz, <a class="citation" href="#Wecker_2015">(Wecker et al., 2015)</a>
+shows that the ansatz doesn’t perform very well in quantum chemistry
+applications but does well on the Hubbard model, a condensed
+matter physics problem.</p>
+
+<p>Since condensed matter physics is one of the fields
+where we expect quantum computing to help, if faced
+with a problem from condensed matter physics,
+HVA is a good ansatz to try out.</p>
+
+<h3 id="hardware-inspired-ansätze">
+<a class="anchor" href="#hardware-inspired-ans%C3%A4tze" aria-hidden="true"><span class="octicon octicon-link"></span></a>Hardware inspired ansätze</h3>
+<p>The basic idea of hardware inspired ansätze is that
+we create a circuit that closely matches the structure
+of the hardware, most importantly the native gateset,
+and if possible the connectivity of the device.</p>
+
+<p>This type of ansätze came from <a class="citation" href="#Kandala_2017">(Kandala et al., 2017)</a>
+and the original is called hardware-efficient ansatz (HEA).
+There are many variants of it now but this one
+is sufficient to get start.</p>
+
+<h4 id="hardware-efficient-ansatz-hea">Hardware-efficient ansatz (HEA)</h4>
+<p>The fundemental structure of the hardware-efficient ansatz
+is to start with a layer of rotations gates acting individualy
+on each qubit as in the figure that follows:</p>
+
+<div class="figure">
+    <img src="/assets/images/vqe/hea-init-layer.png" style="width: 40%; height: auto; display: block; margin: 0 auto">
+    <div class="caption">
+        <span class="caption-label">Possible rotation layer of HEA:</span>
+        we have chosen $RX$ and $RY$ as
+        our rotation gates.
+    </div>
+</div>
+
+<p>Then we follow that initialization step with a layer of entangling gates.
+Then an additional layer of rotations. Then entanglers, etc.
+We will generally want the entangling layer to reflect the topology of the
+device so we can avoid introducing additional $SWAP$ gates to account for
+qubits that are not connected directly on the device.
+This layer will look something like what follows in the figure below:</p>
+
+<div class="figure">
+    <img src="/assets/images/vqe/hea-entangling-layer.png" style="width: 20%; height: auto; display: block; margin: 0 auto">
+    <div class="caption">
+        <span class="caption-label">Possible entangling layer of HEA:</span>
+        we have chosen $CNOT$ gates as our entanglers.
+    </div>
+</div>
+
+<p>The parametrized quantum circuit for HEA will have a general
+structure as per the formula that follows:</p>
+
+\[\begin{align}
+    \ket{\psi(\vec{\theta})} &amp;= \prod_{q=1}^{N} \left[ U^{q,d-1}(\vec{\theta}) \right] \times U_{ENT} \\
+    &amp;\times \prod_{q=1}^{N} \left[ U^{q,d-2}(\vec{\theta}) \right] \times U_{ENT} \\
+    &amp;\times \cdots \times \\
+    &amp;\times \prod_{q=1}^{N} \left[ U^{q,0}(\vec{\theta}) \right] \ket{00\dots0}
+\end{align}\]
+
+<p>Where $q$ is the qubit index up to $N$ qubits and $d$ is number of layers
+since we are allowed to repeat the various rotation and entangling layers.
+$U^{q,l}(\vec{\theta})$ is the layer of rotations acting on $q$ qubits
+in the $d^{th}$ layer. Note that if a layer in a layer has $M$ rotation gates
+per qubits acting on $N$ qubits, we will need $M \times N$ parameters per layer.</p>
+
+<div class="figure figure-alert" style="margin-top: 10px">
+<div class="caption">
+    <div class="caption-label">
+        Exercise
+    </div>
+    The reader is encouraged to use HEA for the two-qubits example(s)
+    we have encounted thus far and explore with changing the number
+    of layers.
+</div>
+</div>
+
+<h3 id="mathematics-inspired-ansätze">
+<a class="anchor" href="#mathematics-inspired-ans%C3%A4tze" aria-hidden="true"><span class="octicon octicon-link"></span></a>Mathematics inspired ansätze</h3>
+<p>In this class of ansätze, we don’t look at the make of the hardware
+nor do we take into consideration the structure of the problem.</p>
+
+<p>The premise is this: how do we prepare arbitrary quantum states?
+There are two ways:</p>
+<ol>
+  <li>State preparation: start from a know state and ask what circuit
+ would allow us to explore the Hilbert space starting from that state.</li>
+  <li>Gate synthesis: given an arbitrary starting state, what circuit
+ would allow us to explore the entire Hilbert space?</li>
+</ol>
+
+<p>We have already encountered ansätze based on state preparation
+so there should be no suprise there.
+The gate synthesis problem on the other hand is based
+on create a unitary that prepares an arbitrary quantum state
+then decomposing that unitary into a given gateset
+(that of the device we will run on).</p>
+
+<p>Both approaches fall into the area of quantum compiling
+and this subsection cannot do it justice.
+We will therefore only broach the subject and point
+the reader to a couple of resources.</p>
+
+<h4 id="state-preparation-ansatz">State preparation ansatz</h4>
+<p>We learned how to prepare states starting from $\ket{00\dots0}$
+in the previous sections and derived circuits for one and two qubits
+circuits.</p>
+
+<p>But we also learned that the circuits derived are inefficient with
+regard to the number of $CNOT$ gates. This is important because
+$CNOT$ gates are known to be very noisy so they reduce
+the quality of our ansatz.</p>
+
+<p>For two qubits, for instance, it is known that we would not
+need more than a single $CNOT$ gate using the Schmidt decomposition.</p>
+
+<p>The method can be generalized to multiple qubits and is elaborate
+upon in <a class="citation" href="#Murta_2023">(Murta et al., 2023)</a>.</p>
+
+<div class="figure figure-alert" style="margin-top: 10px">
+<div class="caption">
+    <div class="caption-label">
+        Exercise
+    </div>
+    The reader is encouraged to read section VII of the paper
+    <a class="citation" href="#Murta_2023">(Murta et al., 2023)</a> and implement the procedure elaborate
+    upon therein.
+</div>
+</div>
+
+<h4 id="gate-synthesis-ansatz">Gate synthesis ansatz</h4>
+<p>In the gate synthesis ansatz, we build a circuit
+that is capable of preparing any quantum state
+irrespective of the starting state.</p>
+
+<p>This may not be as efficient as the Schmidt decomposition
+but it is still a valid procedure to build ourselves
+ansätze. For instance, the gate synthesis for two qubits
+will produce a circuit with 3 $CNOT$ gates.</p>
+
+<p>A circuit for two qubits gate synthesis
+is presented in <a class="citation" href="#Shende_2004">(Shende et al., 2004)</a>.</p>
+
+<div class="figure figure-alert" style="margin-top: 10px">
+<div class="caption">
+    <div class="caption-label">
+        Exercise
+    </div>
+    The reader is encouraged to implement a generic circuit
+    for single and two qubits gate synthesis and compare
+    the results and optimizations with other types of ansätze
+    already studied, mainly HEA and state preparation based
+    ansätze.
+</div>
+</div>
+
+<h2 id="optimizer-selection">
+<a class="anchor" href="#optimizer-selection" aria-hidden="true"><span class="octicon octicon-link"></span></a>Optimizer selection</h2>
+<p>Optimizers are generally classified into two groups:</p>
+<ol>
+  <li>Gradient-based optimizers: these require computing or
+ approximating the gradient of the objective function.</li>
+  <li>Gradient-free optimizers: no need to compute or
+ approximate the gradient of the objective function.</li>
+</ol>
+
+<p>The choice of an optimizer will generally depend on
+how fast it converges to the solution, how many measurements
+it needs, and the quality of the solution obtained.</p>
+
+<p>If exploring optimizers is not your goal, SPSA is good
+starting point <a class="citation" href="#Bonet_Monroig_2023">(Bonet-Monroig et al., 2023)</a>.</p>
+
+<h3 id="gradient-based-methods">
+<a class="anchor" href="#gradient-based-methods" aria-hidden="true"><span class="octicon octicon-link"></span></a>Gradient-based methods</h3>
+<p>Gradient-based methods require computing the gradient
+directly or approximating it in some form.</p>
+
+<p>For optimization by direct gradient computation,
+we discuss gradient-descent. For optimization
+for gradient approximation, we discuss SPSA.</p>
+
+<h4 id="gradient-descent">Gradient-descent</h4>
+<p>The idea of gradient-descent is very simple:
+given a cost function, we calculate its gradient
+then use the it to find the new set of parameters.
+The update rule is given by the following equation:</p>
+
+\[\begin{align}
+    \vec{\theta_{k+1}} = \vec{\theta_k} - \eta \nabla C(\vec{\theta_k})
+\end{align}\]
+
+<p>Where $\eta$ is the learning rate or step size.
+It tells us how big a step to take towards finding the minimum.</p>
+
+<p>At step $n = 0$, we might start with random parameters,
+calculate the gradient with respect to those parameters
+then compute the next set of parameters $n = 1$.</p>
+
+<p>The reader might wander how exactly the gradient of
+the expectation value is calculated; that is finding:</p>
+
+\[\begin{align}
+    \nabla C(\vec{\theta_k}) = \nabla(\bra{\psi(\vec{\theta})} H \ket{\psi(\vec{\theta})})
+    = \bra{0\dots00} \nabla U^{\dagger}(\vec{\theta}) H \nabla U(\vec{\theta}) \ket{00\dots0}
+\end{align}\]
+
+<p>This problem is solved using a method called parameter-shift rule,
+introduced in <a class="citation" href="#Mitarai_2018">(Mitarai et al., 2018)</a>.
+We won’t elaborate on the details, the interested reader
+can get a quick introduction from <a href="https://pennylane.ai/qml/glossary/parameter_shift">PennyLane</a>.</p>
+
+<p>Gradient-descent has many variants, so it is really
+interesting to play with them using different Hamiltonians
+and different PQCs.
+The book <em>Algorithms for Optimization</em> <a class="citation" href="#10.5555/3351864">(Kochenderfer &amp; Wheeler, 2019)</a> has a plethora of such
+algorithms for the interested reader to play with.</p>
+
+<h4 id="simultaneous-perturbation-stochastic-approximation-spsa">Simultaneous perturbation stochastic approximation (SPSA)</h4>
+<p>The idea with SPSA is to replace direct gradient evaluation
+with gradient approximation, that is replacing
+$\nabla C(\vec{\theta_k})$ with an estimator $g_{k}(\vec{\theta_k})$.
+The new update rule is given by:</p>
+
+\[\begin{align}
+    \vec{\theta_{k+1}} = \vec{\theta_k} - a_k g_{k}(\vec{\theta_k})
+\end{align}\]
+
+<p>Where $a_k$ is a positive number and $g_{k}(\vec{\theta_k})$
+is obviously the gradient estimator.</p>
+
+<p>The estimator $g_{k}(\vec{\theta_k})$, being a vector, will have its
+$i^{th}$ component computed as follows:</p>
+
+\[\begin{align}
+    (g_{k}(\vec{\theta_k}))_i = \frac{C(\theta_k + c_k \Delta_k) - C(\theta_k - c_k \Delta_k)}{2c_k(\Delta_{k})_i}
+\end{align}\]
+
+<p>Where $c_k$ is a user-supplied positive number and
+$\Delta_k = \begin{bmatrix} \Delta_{k_1} &amp; \Delta_{k_2} &amp; \cdots &amp; \Delta_{k_p} \end{bmatrix}^\intercal$
+is a random perturbation vector with $p$ entries corresponding to the
+number of parameters in the PQC.</p>
+
+<p>The advantage of SPSA over gradient descent is that it evaluates the objective
+function only twice compared to GD that evaluates it $p$ times.</p>
+
+<div class="figure figure-alert" style="margin-top: 10px">
+<div class="caption">
+    <div class="caption-label">
+        Exercise
+    </div>
+    The reader is encouraged to run GD and SPSA on some problems
+    and compare their convergence rates.
+    The PennyLane tutorial on
+    <a href="https://pennylane.ai/qml/demos/tutorial_spsa">SPSA</a>
+    is a good starting point.
+</div>
+</div>
+
+<h3 id="gradient-free-methods">
+<a class="anchor" href="#gradient-free-methods" aria-hidden="true"><span class="octicon octicon-link"></span></a>Gradient-free methods</h3>
+<p>In gradient-free methods, not only we do not compute
+the gradient directly, we don’t even try to approximate it.</p>
+
+<p>There are many such algorithms such as Nelder-Mead, Powell,
+Quantum analytic descent, etc.</p>
+
+<p>While interesting in their own, I won’t try to even offer
+much description of them but the reader is encouraged
+to also experiment with them if they are so inclined.</p>
+
+<h2 id="measurement-reduction">
+<a class="anchor" href="#measurement-reduction" aria-hidden="true"><span class="octicon octicon-link"></span></a>Measurement reduction</h2>
+<p>Quantum computers are a precious resource so we would like
+to make as few measurements as possible so we can solve
+a greater number of problems.</p>
+
+<p>Let us recall that a Hamiltonian will be a linear combination
+of Pauli terms (tensored Pauli matrices): $H = \sum_i h_i H_i$.</p>
+
+<p>There are two easy ways we can see in trying to reduce
+the number of measurements:</p>
+
+<ol>
+  <li>Measure commuting observables together.</li>
+  <li>Allocate more shots to Pauli terms with higher coefficients.</li>
+</ol>
+
+<p>There are some other strategies that have been proposed
+but those two above are quite easy to understand so we will describe them.</p>
+
+<h3 id="grouping-qubit-wise-commutative-pauli-terms">
+<a class="anchor" href="#grouping-qubit-wise-commutative-pauli-terms" aria-hidden="true"><span class="octicon octicon-link"></span></a>Grouping qubit-wise commutative Pauli terms</h3>
+<p>It is know that observables that do not commute cannot be
+measured simultaneously due to the Heisenberg uncertainty
+principle.</p>
+
+<p>Conversely, if two observables commute they can be measured
+simultaneously.</p>
+
+<p>Qubit-wise commutativity simply means that in a Pauli term
+if each Pauli matrix acting on qubit $i$ commutes with a
+Pauli matrix in another Pauli term then those two
+Pauli terms commute with each other.<br>
+This will be the case when the Pauli matrix in both terms
+is either itself or the identity.</p>
+
+<p>For instance, in our two-qubits Hamiltonian
+$H = \sigma^{(x)} \otimes \sigma^{(z)} + \sigma^{(i)} \otimes \sigma^{(z)}$
+both terms $H_1 = \sigma^{(x)} \otimes \sigma^{(z)}$ and
+$H_2 = \sigma^{(i)} \otimes \sigma^{(z)}$ commute qubit-wise
+because $\sigma^{(x)}$ commutes with $\sigma^{(i)}$
+and $\sigma^{(z)}$ commutes with itself.
+That means that both terms of $H$ can be measured simultaneously.</p>
+
+<p>If instead we had $H = \sigma^{(x)} \otimes \sigma^{(z)} + \sigma^{(z)} \otimes \sigma^{(z)}$
+then we couldn’t measure both Pauli terms simultaneously
+because they are not qubit-wise commuting.</p>
+
+<p>The essence of grouping is to find Pauli terms in a Hamiltonian
+that commute and measure them together therefore
+reducing the number of measurements needed to calculate
+the expectation value of the entire Hamiltonian.</p>
+
+<h3 id="weight-distribution-of-measurements">
+<a class="anchor" href="#weight-distribution-of-measurements" aria-hidden="true"><span class="octicon octicon-link"></span></a>Weight distribution of measurements</h3>
+<p>We recall that the expectation value of $H = \sum_i h_i H_i$
+is given by $\braket{H} = \sum_i h_i \braket{H_i}$.
+It follows that terms with higher coefficients will
+contribute more to the final expectation value than those with
+lower coefficients.</p>
+
+<p>So the basic idea is to weight each Pauli term according
+to its coefficient then distribute shots according to
+the weight of each Pauli term.</p>
+
+<p>In some cases, if some terms have very little weights,
+they might be dropped entirely without affecting much the final
+result.</p>
+
+<h2 id="practical-considerations">
+<a class="anchor" href="#practical-considerations" aria-hidden="true"><span class="octicon octicon-link"></span></a>Practical considerations</h2>
+<p>There are a couple of challenges to consider when dealing with VQE:</p>
+
+<ol>
+  <li>The number of measurements.</li>
+  <li>Barren plateaus during training.</li>
+</ol>
+
+<h3 id="the-measurement-problem">
+<a class="anchor" href="#the-measurement-problem" aria-hidden="true"><span class="octicon octicon-link"></span></a>The measurement problem</h3>
+<p>Compared to training neural networks, VQE sometimes
+require that we keep the optimization loop going
+until we have enough samples to calculate the expectation
+value up to a required precision.</p>
+
+<p>This has proven challenging because it requires a huge
+number of measurements to achieve the need precision.
+<a class="citation" href="#Gonthier_2022">(Gonthier et al., 2022)</a> show that for quantum chemistry
+applications on relatively simple molecules, a single
+energy evaluation takes days!</p>
+
+<p>This is a major limitation of VQE that’s a subject
+of current research.</p>
+
+<h3 id="barren-plateaus-problem">
+<a class="anchor" href="#barren-plateaus-problem" aria-hidden="true"><span class="octicon octicon-link"></span></a>Barren plateaus problem</h3>
+<p>In order to do optimization, we saw that using gradient-based
+optimization, we need to evaluate the gradient of the
+cost function.</p>
+
+<p>What <a class="citation" href="#McClean_2018">(McClean et al., 2018)</a> showed was that for a large class
+of parametrized quantum circuits the gradient will become
+zero during optimization and thus the optimization will not progress.</p>
+
+<p>This is the trainability problem of VQE.
+What’s worse, the more expressive a PQC
+(meaning the more it can explore the Hilbert space),
+the more prone it is to the barren plateau problem.</p>
+
+<p>So it is important to look for PQCs that are robust
+against barren plateaus.</p>
+
+<h2 id="conclusion">
+<a class="anchor" href="#conclusion" aria-hidden="true"><span class="octicon octicon-link"></span></a>Conclusion</h2>
+<p>We introduced the variational quantum eigensolver(VQE)
+by doing thorough derivations of the basic components of
+how it works and wrote code that validate the algorithm.</p>
+
+<p>The interested reader is given pointers in refining the
+different components of the algorithm so they can tackle
+more advanced applications.</p>
+
+<p>We finally touched upon some practical considerations
+that highlight the limitations of VQE and where research
+is headed so as to make VQE of practical use.</p>
+
+<h2 id="derivations">
+<a class="anchor" href="#derivations" aria-hidden="true"><span class="octicon octicon-link"></span></a>Derivations</h2>
+<p>Some derivations were not necessary to follow the main material
+but nonetheless are useful to know for completeness sake.
+This section contains those derivations for interested readers.</p>
+
+<h3 id="eigenvalues-and-eigenvectors-of-sigmaz">
+<a class="anchor" href="#eigenvalues-and-eigenvectors-of-sigmaz" aria-hidden="true"><span class="octicon octicon-link"></span></a>Eigenvalues and eigenvectors of $\sigma^{(z)}$</h3>
+<h4 id="eigenvalues">Eigenvalues</h4>
+
+\[\begin{align}
+    \det\begin{vmatrix} \sigma^{(z)} - \lambda \sigma^{(i)} \end{vmatrix} &amp;= 0 \\
+    \implies
+    \det\begin{vmatrix}
+        \begin{bmatrix}
+        1-\lambda &amp; 0 \\
+        0 &amp; -1-\lambda
+        \end{bmatrix}
+    \end{vmatrix} &amp;= 0 \\
+    \implies (1-\lambda)(-1-\lambda) &amp;= 0 \\
+    \implies \lambda &amp;= \pm 1
+\end{align}\]
+
+<p>The eigenvalues of $\sigma^{(z)}$ are $\lambda_0 = +1$ and $\lambda_1 = -1$.</p>
+
+<h4 id="eigenvectors">Eigenvectors</h4>
+<ul>
+  <li>
+    <p><em>Eigenvector corresponding to eigenvalue $\lambda_0 = +1$</em></p>
+
+\[\begin{align}
+      \sigma^{(z)} \ket{\lambda_+} &amp;= +1 \ket{\lambda_+} \\
+      \implies
+      \begin{bmatrix}
+      1 &amp; 0 \\
+      0 &amp; -1
+      \end{bmatrix}
+      \begin{bmatrix}
+      c_0 \\
+      c_1
+      \end{bmatrix}
+      &amp;=
+      \begin{bmatrix}
+      c_0 \\
+      c_1
+      \end{bmatrix} \\
+      \implies
+      \begin{bmatrix}
+      c_0 \\
+      -c_1
+      \end{bmatrix}
+      &amp;=
+      \begin{bmatrix}
+      c_0 \\
+      c_1
+      \end{bmatrix} \\
+      \implies
+      \begin{cases}
+      c_0 &amp;= c_0 \\
+      -c_1 &amp;= c_1
+      \end{cases}
+  \end{align}\]
+
+    <p>In the last step, $c_0 = c_0$ tells us nothing useful.
+  But $-c_1 = c_1$ tells us that $c_1 = 0$. It follows then that
+  $\ket{\lambda_+} = \begin{bmatrix} c_0 \\ 0 \end{bmatrix}$.</p>
+
+    <p>Using the normalization condition,
+  we find that $\braket{\lambda_+|\lambda_+}=1$ implies $|c_0|^2=1$ therefore
+  $c_0 = 1$.</p>
+
+    <p>Thus $\ket{\lambda_+} = \begin{bmatrix} 1 \\ 0 \end{bmatrix}$.
+  This eigenvector is also written as $\ket{0} = \ket{\lambda_+}$.</p>
+  </li>
+  <li>
+    <p><em>Eigenvector corresponding to eigenvalue $\lambda_1 = -1$</em><br>
+  Repeating the same calculations as above:</p>
+
+\[\begin{align}
+      \sigma^{(z)} \ket{\lambda_-} &amp;= -1 \ket{\lambda_-} \\
+      \implies
+      \begin{bmatrix}
+      1 &amp; 0 \\
+      0 &amp; -1
+      \end{bmatrix}
+      \begin{bmatrix}
+      c_0 \\
+      c_1
+      \end{bmatrix}
+      &amp;=
+      \begin{bmatrix}
+      -c_0 \\
+      -c_1
+      \end{bmatrix} \\
+      \implies
+      \begin{bmatrix}
+      c_0 \\
+      -c_1
+      \end{bmatrix}
+      &amp;=
+      \begin{bmatrix}
+      -c_0 \\
+      -c_1
+      \end{bmatrix} \\
+      \implies
+      \begin{cases}
+      c_0 &amp;= -c_0 \\
+      c_1 &amp;= c_1
+      \end{cases}
+  \end{align}\]
+
+    <p>Following the same reasoning that we used to calculate $\ket{\lambda_+}$,
+  we find that $c_0 = 0$ and $c_1=1$.</p>
+
+    <p>Thus $\ket{\lambda_-} = \begin{bmatrix} 0 \\ 1 \end{bmatrix}$.
+  This eigenvector is also written as $\ket{1} = \ket{\lambda_-}$.</p>
+  </li>
+</ul>
+
+<h3 id="eigenvalues-and-eigenvectors-of-sigmay">
+<a class="anchor" href="#eigenvalues-and-eigenvectors-of-sigmay" aria-hidden="true"><span class="octicon octicon-link"></span></a>Eigenvalues and eigenvectors of $\sigma^{(y)}$</h3>
+<h4 id="eigenvalues-1">Eigenvalues</h4>
+
+\[\begin{align}
+    \det\begin{vmatrix} \sigma^{(y)} - \lambda \sigma^{(i)} \end{vmatrix} &amp;= 0 \\
+    \implies
+    \det\begin{vmatrix}
+        \begin{bmatrix}
+        -\lambda &amp; -i \\
+        i &amp; -\lambda
+        \end{bmatrix}
+    \end{vmatrix} &amp;= 0 \\
+    \implies \lambda^{2}-1 &amp;= 0 \\
+    \implies \lambda &amp;= \pm 1
+\end{align}\]
+
+<p>The eigenvalues of $\sigma^{(y)}$ are $\lambda_+ = +1$ and $\lambda_- = -1$.</p>
+
+<h4 id="eigenvectors-1">Eigenvectors</h4>
+<ul>
+  <li>
+    <p><em>Eigenvector corresponding to eigenvalue $\lambda_+ = +1$</em></p>
+
+\[\begin{align}
+      \sigma^{(y)} \ket{\lambda_+} &amp;= +1 \ket{\lambda_+} \\
+      \implies
+      \begin{bmatrix}
+      0 &amp; -i \\
+      i &amp; 0
+      \end{bmatrix}
+      \begin{bmatrix}
+      c_0 \\
+      c_1
+      \end{bmatrix}
+      &amp;=
+      \begin{bmatrix}
+      c_0 \\
+      c_1
+      \end{bmatrix} \\
+      \implies
+      \begin{bmatrix}
+      -i c_1 \\
+      i c_0
+      \end{bmatrix}
+      &amp;=
+      \begin{bmatrix}
+      c_0 \\
+      c_1
+      \end{bmatrix} \\
+      \implies
+      \begin{cases}
+      -i c_1 &amp;= c_0 \\
+      i c_0 &amp;= c_1
+      \end{cases}
+  \end{align}\]
+
+    <p>Using $c_1 = i c_0$, we transform $\ket{\lambda_+}$ as follows:
+  $\ket{\lambda_+} = \begin{bmatrix}c_0 \\ i c_0\end{bmatrix}$</p>
+
+    <p>Using the normalization condition,
+  we find that $\braket{\lambda_+|\lambda_+}=1$ implies $2|c_0|^2=1$
+  from which it follows that $c_0 = \dfrac{1}{\sqrt{2}}$.
+  Consequently $c_1 = \dfrac{i}{\sqrt{2}}$.</p>
+
+    <p>Thus $\ket{\lambda_+} = \dfrac{1}{\sqrt{2}} \begin{bmatrix} 1 \\ i \end{bmatrix}$.
+  This eigenvector is also written as $\ket{+i} = \ket{\lambda_+}$.
+  Expressed in the $\sigma^{(z)}$ basis, $\ket{+i} = \dfrac{1}{\sqrt{2}}(\ket{0} + i\ket{1})$.</p>
+  </li>
+  <li>
+    <p><em>Eigenvector corresponding to eigenvalue $\lambda_- = -1$</em></p>
+
+\[\begin{align}
+      \sigma^{(y)} \ket{\lambda_-} &amp;= -1 \ket{\lambda_-} \\
+      \implies
+      \begin{bmatrix}
+      0 &amp; -i \\
+      i &amp; 0
+      \end{bmatrix}
+      \begin{bmatrix}
+      c_0 \\
+      c_1
+      \end{bmatrix}
+      &amp;=
+      \begin{bmatrix}
+      -c_0 \\
+      -c_1
+      \end{bmatrix} \\
+      \implies
+      \begin{bmatrix}
+      -i c_1 \\
+      i c_0
+      \end{bmatrix}
+      &amp;=
+      \begin{bmatrix}
+      -c_0 \\
+      -c_1
+      \end{bmatrix} \\
+      \implies
+      \begin{cases}
+      i c_1 &amp;= c_0 \\
+      i c_0 &amp;= -c_1
+      \end{cases}
+  \end{align}\]
+
+    <p>Using $c_0 = i c_1$, we transform $\ket{\lambda_-}$ as follows:
+  $\ket{\lambda_-} = \begin{bmatrix}ic_1 \\ c_1\end{bmatrix}$</p>
+
+    <p>Using the normalization condition,
+  we find that $\braket{\lambda_-|\lambda_-}=1$ implies $2|c_1|^2=1$
+  from which it follows that $c_1 = \dfrac{1}{\sqrt{2}}$.
+  Consequently $c_1 = -\dfrac{i}{\sqrt{2}}$.</p>
+
+    <p>Thus $\ket{\lambda_-} = \dfrac{1}{\sqrt{2}} \begin{bmatrix} 1 \\ -i \end{bmatrix}$.
+  This eigenvector is also written as $\ket{-i} = \ket{\lambda_-}$.
+  Expressed in the $\sigma^{(z)}$ basis, $\ket{-i} = \dfrac{1}{\sqrt{2}}(\ket{0} - i\ket{1})$.</p>
+  </li>
+</ul>
+
+<h3 id="eigenvalues-and-eigenvectors-of-sigmax">
+<a class="anchor" href="#eigenvalues-and-eigenvectors-of-sigmax" aria-hidden="true"><span class="octicon octicon-link"></span></a>Eigenvalues and eigenvectors of $\sigma^{(x)}$</h3>
+<h4 id="eigenvalues-2">Eigenvalues</h4>
+
+\[\begin{align}
+    \det\begin{vmatrix} \sigma^{(x)} - \lambda \sigma^{(i)} \end{vmatrix} &amp;= 0 \\
+    \implies
+    \det\begin{vmatrix}
+        \begin{bmatrix}
+        -\lambda &amp; 1 \\
+        1 &amp; -\lambda
+        \end{bmatrix}
+    \end{vmatrix} &amp;= 0 \\
+    \implies \lambda^{2}-1 &amp;= 0 \\
+    \implies \lambda &amp;= \pm 1
+\end{align}\]
+
+<p>The eigenvalues of $\sigma^{(x)}$ are $\lambda_+ = +1$ and $\lambda_- = -1$.</p>
+
+<h4 id="eigenvectors-2">Eigenvectors</h4>
+<ul>
+  <li>
+    <p><em>Eigenvector corresponding to eigenvalue $\lambda_+ = +1$</em></p>
+
+\[\begin{align}
+      \sigma^{(x)} \ket{\lambda_+} &amp;= +1 \ket{\lambda_+} \\
+      \implies
+      \begin{bmatrix}
+      0 &amp; 1 \\
+      1 &amp; 0
+      \end{bmatrix}
+      \begin{bmatrix}
+      c_0 \\
+      c_1
+      \end{bmatrix}
+      &amp;=
+      \begin{bmatrix}
+      c_0 \\
+      c_1
+      \end{bmatrix} \\
+      \implies
+      \begin{bmatrix}
+      c_1 \\
+      c_0
+      \end{bmatrix}
+      &amp;=
+      \begin{bmatrix}
+      c_0 \\
+      c_1
+      \end{bmatrix} \\
+      \implies
+      \begin{cases}
+      c_1 &amp;= c_0 \\
+      c_0 &amp;= c_1
+      \end{cases}
+  \end{align}\]
+
+    <p>Using $c_1 = c_0$, we transform $\ket{\lambda_+}$ as follows:
+  $\ket{\lambda_+} = \begin{bmatrix}c_0 \\ c_0\end{bmatrix}$</p>
+
+    <p>Using the normalization condition,
+  we find that $\braket{\lambda_+|\lambda_+}=1$ implies $2|c_0|^2=1$
+  from which it follows that $c_0 = \dfrac{1}{\sqrt{2}}$.
+  Consequently $c_1 = \dfrac{1}{\sqrt{2}}$.</p>
+
+    <p>Thus $\ket{\lambda_+} = \dfrac{1}{\sqrt{2}} \begin{bmatrix} 1 \\ 1 \end{bmatrix}$.
+  This eigenvector is also written as $\ket{+} = \ket{\lambda_+}$.
+  Expressed in the $\sigma^{(z)}$ basis, $\ket{+} = \dfrac{1}{\sqrt{2}}(\ket{0} + \ket{1})$.</p>
+  </li>
+  <li>
+    <p><em>Eigenvector corresponding to eigenvalue $\lambda_- = -1$</em></p>
+
+\[\begin{align}
+      \sigma^{(x)} \ket{\lambda_-} &amp;= -1 \ket{\lambda_-} \\
+      \implies
+      \begin{bmatrix}
+      0 &amp; 1 \\
+      1 &amp; 0
+      \end{bmatrix}
+      \begin{bmatrix}
+      c_0 \\
+      c_1
+      \end{bmatrix}
+      &amp;=
+      \begin{bmatrix}
+      -c_0 \\
+      -c_1
+      \end{bmatrix} \\
+      \implies
+      \begin{bmatrix}
+      c_1 \\
+      c_0
+      \end{bmatrix}
+      &amp;=
+      \begin{bmatrix}
+      -c_0 \\
+      -c_1
+      \end{bmatrix} \\
+      \implies
+      \begin{cases}
+      c_1 &amp;= -c_0 \\
+      c_0 &amp;= -c_1
+      \end{cases}
+  \end{align}\]
+
+    <p>Using $c_0 = -c_1$, we transform $\ket{\lambda_-}$ as follows:
+  $\ket{\lambda_-} = \begin{bmatrix}c_0 \\ -c_0\end{bmatrix}$</p>
+
+    <p>Using the normalization condition,
+  we find that $\braket{\lambda_-|\lambda_-}=1$ implies $2|c_0|^2=1$
+  from which it follows that $c_0 = \dfrac{1}{\sqrt{2}}$.
+  Consequently $c_1 = -\dfrac{1}{\sqrt{2}}$.</p>
+
+    <p>Thus $\ket{\lambda_-} = \dfrac{1}{\sqrt{2}} \begin{bmatrix} 1 \\ -1\end{bmatrix}$.
+  This eigenvector is also written as $\ket{-} = \ket{\lambda_-}$.
+  Expressed in the $\sigma^{(z)}$ basis, $\ket{-} = \dfrac{1}{\sqrt{2}}(\ket{0} - \ket{1})$.</p>
+  </li>
+</ul>
+
+<h3 id="parametrized-quantum-circuits-via-state-preparation">
+<a class="anchor" href="#parametrized-quantum-circuits-via-state-preparation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Parametrized quantum circuits via state preparation</h3>
+<p>We can use state preparation circuits as a starting point
+for the design of parametrized quantum circuits.</p>
+
+<p>We do derivations for single-qubit and two-qubits states
+though the procedure can be extented to multiple qubits.</p>
+
+<p><em>Note: except for the single-qubit case, any circuit</em>
+<em>of more than one qubit obtained by the procedure below</em>
+<em>will be inefficient depth-wise and CNOT count wise.</em></p>
+
+<h4 id="single-qubit-state-preparation">Single-qubit state preparation</h4>
+<p>A single qubit has the trigonometric parametrization:</p>
+
+\[\begin{align}
+\ket{\psi} = \cos\dfrac{\theta}{2} \ket{0} + {\rm e}^{i\phi} \sin\dfrac{\theta}{2} \ket{1}
+\end{align}\]
+
+<p>Our task then is to design a circuit that would prepare such a state
+starting from the state $\ket{0}$.</p>
+
+<p>We begin by noting that
+$RY(\theta)\ket{0} = \cos\dfrac{\theta}{2} \ket{0} + \sin\dfrac{\theta}{2} \ket{1}$.
+We also know that application of the phase shift gate confers
+a phase to a qubit in the $\ket{1}$ state but does nothing to the $\ket{0}$ state.</p>
+
+<p>So it follows that
+$P(\phi)RY(\theta)\ket{0} = \cos\dfrac{\theta}{2} \ket{0} + {\rm e}^{i\phi} \sin\dfrac{\theta}{2} \ket{1}$.</p>
+
+<p>And thus we have our circuit:</p>
+
+<div class="figure">
+    <img src="/assets/images/vqe/single-qubit-state-preparation.png" style="width: 35%; height: auto; display: block; margin: 0 auto">
+    <div class="caption">
+        <span class="caption-label">Preparation of an arbitrary single qubit state:</span>
+        we apply a rotation about Y then a phase shift gate.
+    </div>
+</div>
+
+<h4 id="two-qubits-state-preparation">Two-qubits state preparation</h4>
+<p>A two-qubits state has the trigonometric parametrization:</p>
+
+\[\begin{align}
+\ket{\psi}  &amp;= \cos\dfrac{\theta_1}{2} \ket{00} \\
+            &amp;+ {\rm e}^{i\phi_1} \sin\dfrac{\theta_1}{2} \cos\dfrac{\theta_2}{2} \ket{01} \\
+            &amp;+ {\rm e}^{i\phi_2} \sin\dfrac{\theta_1}{2} \sin\dfrac{\theta_2}{2} \cos\dfrac{\theta_3}{2}  \ket{10} \\
+            &amp;+ {\rm e}^{i\phi_3} \sin\dfrac{\theta_1}{2} \sin\dfrac{\theta_2}{2} \sin\dfrac{\theta_3}{2}  \ket{11} \\
+\end{align}\]
+
+<p>We design the circuit by following the exact same steps as for the single qubit case,
+starting from the $\ket{00}$ state.</p>
+
+<ol>
+  <li>
+    <p>Apply $RY(\theta_1)$ to qubit $1$:</p>
+
+\[\begin{align}
+ \ket{\psi_1} &amp;= RY_{1}(\theta_1) \ket{00} \\
+             &amp;= \cos\dfrac{\theta_1}{2} \ket{00} + \sin\dfrac{\theta_1}{2} \ket{01}
+ \end{align}\]
+  </li>
+  <li>
+    <p>Apply $P(\phi_1)$ to qubit $1$:</p>
+
+\[\begin{align}
+ \ket{\psi_2} &amp;= P_{1}(\phi_1) \ket{\psi_1} \\
+             &amp;= \cos\dfrac{\theta_1}{2} \ket{00} + {\rm e}^{i\phi_1} \sin\dfrac{\theta_1}{2} \ket{01}
+ \end{align}\]
+  </li>
+  <li>
+    <p>Apply controlled-$RY(\phi_{2})$ to qubit $0$ if qubit $1$ is set:</p>
+
+\[\begin{align}
+ \ket{\psi_3} &amp;= CRY^{(1)}_{1\to 0}(\theta_2) \ket{\psi_2} \\
+             &amp;= \cos\dfrac{\theta_1}{2} \ket{00} \\
+             &amp;+ {\rm e}^{i\phi_1} \sin\dfrac{\theta_1}{2} \cos\dfrac{\theta_2}{2} \ket{01} \\
+             &amp;+ \underbrace{ {\rm e}^{i\phi_1} }_{\text{wrong phase}} \sin\dfrac{\theta_1}{2} \sin\dfrac{\theta_2}{2} \ket{11}
+ \end{align}\]
+
+    <p>Comparing with the original state $\ket{\psi}$ we are trying to construct,
+ it clear that the term ${\rm e}^{i\phi_1} \sin\dfrac{\theta_1}{2} \sin\dfrac{\theta_2}{2} \ket{11}$
+ in $\ket{\psi_3}$ has the wrong phase; it should be ${\rm e}^{i\phi_3}$ and not ${\rm e}^{i\phi_1}$.
+ We do the correction in the next step.</p>
+  </li>
+  <li>
+    <p>Apply controlled-$P(\phi_3-\phi_1)$ to qubit $1$ if qubit $0$ is set:</p>
+
+\[\begin{align}
+ \ket{\psi_4} &amp;= CP^{(1)}_{0\to 1}(\phi_3 - \phi_1) \ket{\psi_3} \\
+             &amp;= \cos\dfrac{\theta_1}{2} \ket{00} \\
+             &amp;+ {\rm e}^{i\phi_1} \sin\dfrac{\theta_1}{2} \cos\dfrac{\theta_2}{2} \ket{01} \\
+             &amp;+ {\rm e}^{i\phi_3} \sin\dfrac{\theta_1}{2} \sin\dfrac{\theta_2}{2} \ket{11}
+ \end{align}\]
+  </li>
+  <li>
+    <p>Apply controlled-$RY(\theta_3)$ to qubit $1$ if qubit $0$ is set:</p>
+
+\[\begin{align}
+ \ket{\psi_5} &amp;= CRY^{(1)}_{0\to 1}(\theta_3) \ket{\psi_4} \\
+             &amp;= \cos\dfrac{\theta_1}{2} \ket{00} \\
+             &amp;+ {\rm e}^{i\phi_1} \sin\dfrac{\theta_1}{2} \cos\dfrac{\theta_2}{2} \ket{01} \\
+             &amp;+ \underbrace{ {\rm e}^{i\phi_3} }_{\text{wrong phase}} \sin\dfrac{\theta_1}{2} \sin\dfrac{\theta_2}{2} \cos\dfrac{\theta_3}{2} \ket{10} \\
+             &amp;+ {\rm e}^{i\phi_3} \sin\dfrac{\theta_1}{2} \sin\dfrac{\theta_2}{2} \sin\dfrac{\theta_3}{2} \ket{11} \\
+ \end{align}\]
+
+    <p>Again, we see that there is a term with the wrong phase,
+ ${\rm e}^{i\phi_3} \sin\dfrac{\theta_1}{2} \sin\dfrac{\theta_2}{2} \cos\dfrac{\theta_3}{2} \ket{10}$.
+ It should be ${\rm e}^{i\phi_2}$ and not ${\rm e}^{i\phi_3}$. We correct the phase in the next step.</p>
+  </li>
+  <li>
+    <p>Apply controlled-$P(\phi_2 - \phi_3)$ to qubit $0$ if qubit $1$ is <strong>not</strong> set:</p>
+
+\[\begin{align}
+ \ket{\psi_6} &amp;= CP^{(0)}_{0\to 1}(\phi_2 - \phi_2) \ket{\psi_5} \\
+             &amp;= \cos\dfrac{\theta_1}{2} \ket{00} \\
+             &amp;+ {\rm e}^{i\phi_1} \sin\dfrac{\theta_1}{2} \cos\dfrac{\theta_2}{2} \ket{01} \\
+             &amp;+ {\rm e}^{i\phi_2} \sin\dfrac{\theta_1}{2} \sin\dfrac{\theta_2}{2} \cos\dfrac{\theta_3}{2} \ket{10} \\
+             &amp;+ {\rm e}^{i\phi_3} \sin\dfrac{\theta_1}{2} \sin\dfrac{\theta_2}{2} \sin\dfrac{\theta_3}{2} \ket{11}
+ \end{align}\]
+
+    <p>Notice that the term $\cos\dfrac{\theta_1}{2} \ket{00}$ doesn’t acquire any phase.
+ This is because, remember, the target qubit is in the $\ket{0}$ state.</p>
+  </li>
+</ol>
+
+<p>And we have recovered the original state $\ket{\psi}$.
+The circuit corresponding to the gates sequences is presented below:</p>
+
+<div class="figure">
+    <img src="/assets/images/vqe/two-qubits-state-preparation.png" style="width: 100%; height: auto; display: block; margin: 0 auto">
+    <div class="caption">
+        <span class="caption-label">Preparation of an arbitrary two-qubits state:</span>
+        we notice that we have 4 controlled operations which will be quite expensive.
+    </div>
+</div>
+
+<p>The last negated control (change target if control <strong>is not</strong> set)
+can be replaced by a positive control (change target if control <strong>is</strong> set)
+by sandwiching the control between two $X$ gates. This replacement yields
+the following circuit:</p>
+
+<div class="figure">
+    <img src="/assets/images/vqe/two-qubits-state-preparation-final.png" style="width: 100%; height: auto; display: block; margin: 0 auto">
+    <div class="caption">
+        <span class="caption-label">Preparation of an arbitrary two-qubits state:</span>
+        we change the negative control to a positive control so the circuit is easy
+        to work with in PennyLane.
+    </div>
+</div>
+
+<div class="figure figure-alert figure-warning" style="margin-top: 10px">
+<div class="caption">
+    <div class="caption-label">
+        The derived parametrized quantum circuit is inefficient
+    </div>
+    Notice that we require 4 controlled rotations that will amount
+    to 8 controlled CNOTs and 8 single-qubit rotations.
+    <b>This is wildly inefficient.</b><br>
+    This derivation is shown for completeness sake,
+    there are better PQCs!
+</div>
+</div>
+
+    </div>
+    <div id="bibliography">
+        <div class="wrap">
+            <ol class="bibliography">
+<li><span id="nielsen_chuang_2010">Nielsen, M. A., &amp; Chuang, I. L. (2010). <i>Quantum Computation and Quantum Information: 10th Anniversary Edition</i>. Cambridge University Press. https://doi.org/10.1017/CBO9780511976667</span></li>
+<li><span id="Tilly_2022">Tilly, J., Chen, H., Cao, S., Picozzi, D., Setia, K., Li, Y., Grant, E., Wossnig, L., Rungger, I., Booth, G. H., &amp; Tennyson, J. (2022). The Variational Quantum Eigensolver: A review of methods and best practices. <i>Physics Reports</i>, <i>986</i>, 1–128. https://doi.org/10.1016/j.physrep.2022.08.003</span></li>
+<li><span id="Peruzzo_2014">Peruzzo, A., McClean, J., Shadbolt, P., Yung, M.-H., Zhou, X.-Q., Love, P. J., Aspuru-Guzik, A., &amp; O’Brien, J. L. (2014). A variational eigenvalue solver on a photonic quantum processor. <i>Nature Communications</i>, <i>5</i>(1). https://doi.org/10.1038/ncomms5213</span></li>
+<li><span id="Wecker_2015">Wecker, D., Hastings, M. B., &amp; Troyer, M. (2015). Progress towards practical quantum variational algorithms. <i>Physical Review A</i>, <i>92</i>(4). https://doi.org/10.1103/physreva.92.042303</span></li>
+<li><span id="Kandala_2017">Kandala, A., Mezzacapo, A., Temme, K., Takita, M., Brink, M., Chow, J. M., &amp; Gambetta, J. M. (2017). Hardware-efficient variational quantum eigensolver for small molecules and quantum magnets. <i>Nature</i>, <i>549</i>(7671), 242–246. https://doi.org/10.1038/nature23879</span></li>
+<li><span id="Murta_2023">Murta, B., Cruz, P. M. Q., &amp; Fernández-Rossier, J. (2023). Preparing valence-bond-solid states on noisy intermediate-scale quantum computers. <i>Physical Review Research</i>, <i>5</i>(1). https://doi.org/10.1103/physrevresearch.5.013190</span></li>
+<li><span id="Shende_2004">Shende, V. V., Markov, I. L., &amp; Bullock, S. S. (2004). Minimal universal two-qubit controlled-NOT-based circuits. <i>Physical Review A</i>, <i>69</i>(6). https://doi.org/10.1103/physreva.69.062321</span></li>
+<li><span id="Bonet_Monroig_2023">Bonet-Monroig, X., Wang, H., Vermetten, D., Senjean, B., Moussa, C., Bäck, T., Dunjko, V., &amp; O’Brien, T. E. (2023). Performance comparison of optimization methods on variational quantum algorithms. <i>Physical Review A</i>, <i>107</i>(3). https://doi.org/10.1103/physreva.107.032407</span></li>
+<li><span id="Mitarai_2018">Mitarai, K., Negoro, M., Kitagawa, M., &amp; Fujii, K. (2018). Quantum circuit learning. <i>Physical Review A</i>, <i>98</i>(3). https://doi.org/10.1103/physreva.98.032309</span></li>
+<li><span id="10.5555/3351864">Kochenderfer, M. J., &amp; Wheeler, T. A. (2019). <i>Algorithms for Optimization</i>. The MIT Press.</span></li>
+<li><span id="Gonthier_2022">Gonthier, J. F., Radin, M. D., Buda, C., Doskocil, E. J., Abuan, C. M., &amp; Romero, J. (2022). Measurements as a roadblock to near-term practical quantum advantage in chemistry: Resource analysis. <i>Physical Review Research</i>, <i>4</i>(3). https://doi.org/10.1103/physrevresearch.4.033154</span></li>
+<li><span id="McClean_2018">McClean, J. R., Boixo, S., Smelyanskiy, V. N., Babbush, R., &amp; Neven, H. (2018). Barren plateaus in quantum neural network training landscapes. <i>Nature Communications</i>, <i>9</i>(1). https://doi.org/10.1038/s41467-018-07090-4</span></li>
+</ol>
+        </div>
+    </div>
+</div>
+</body>
+</html>
