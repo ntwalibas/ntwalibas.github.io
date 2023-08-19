@@ -1059,19 +1059,19 @@ with respect to one of its ground states.</li>
 <ol>
   <li>Eigenvalue $-1$ has eigenvectors:
     <ul>
-      <li>$\dfrac{1}{\sqrt{2}} \begin{bmatrix} 0 &amp; 1 &amp; 0 &amp; 0\end{bmatrix}^\intercal$</li>
-      <li>$\dfrac{1}{\sqrt{2}} \begin{bmatrix} 0 &amp; 0 &amp; 0 &amp; 1\end{bmatrix}^\intercal$</li>
+      <li>$\begin{bmatrix} 0 &amp; 0 &amp; 1 &amp; 0\end{bmatrix}^\intercal$</li>
+      <li>$\begin{bmatrix} 0 &amp; 0 &amp; 0 &amp; 1\end{bmatrix}^\intercal$</li>
     </ul>
   </li>
   <li>Eigenvalue $+1$ has eigenvectors:
     <ul>
-      <li>$\dfrac{1}{\sqrt{2}} \begin{bmatrix} 1 &amp; 0 &amp; 0 &amp; 0\end{bmatrix}^\intercal$</li>
-      <li>$\dfrac{1}{\sqrt{2}} \begin{bmatrix} 0 &amp; 0 &amp; 1 &amp; 0\end{bmatrix}^\intercal$</li>
+      <li>$\begin{bmatrix} 1 &amp; 0 &amp; 0 &amp; 0\end{bmatrix}^\intercal$</li>
+      <li>$\begin{bmatrix} 0 &amp; 1 &amp; 0 &amp; 0\end{bmatrix}^\intercal$</li>
     </ul>
   </li>
 </ol>
 
-<p>We will prepare $\ket{\psi} = \dfrac{1}{\sqrt{2}} \begin{bmatrix} 0 &amp; 0 &amp; 0 &amp; 1\end{bmatrix}^\intercal = \dfrac{1}{\sqrt{2}} \ket{11}$
+<p>We will prepare $\ket{\psi} = \begin{bmatrix} 0 &amp; 0 &amp; 0 &amp; 1\end{bmatrix}^\intercal = \ket{11}$
 and measure $H$ against that state.</p>
 
 <p>The circuit that prepares $\ket{\psi}$ and measures $H$ against that
@@ -1097,7 +1097,7 @@ in the code. We just perform a measurement on the first qubit.</p>
 
 <span class="n">dev</span> <span class="o">=</span> <span class="n">qml</span><span class="p">.</span><span class="n">device</span><span class="p">(</span>
     <span class="s">"default.qubit"</span><span class="p">,</span>
-    <span class="n">wires</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">wires</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
     <span class="n">shots</span> <span class="o">=</span> <span class="mi">10000</span>
 <span class="p">)</span>
 

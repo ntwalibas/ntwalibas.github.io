@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2023-08-18T16:43:51+01:00</updated><id>http://localhost:4000/feed.xml</id><entry><title type="html">Introduction to the Variational Quantum Eigensolver</title><link href="http://localhost:4000/blog/2023/08/17/introductionto-to-variational-quantum-eigensolver/" rel="alternate" type="text/html" title="Introduction to the Variational Quantum Eigensolver" /><published>2023-08-17T00:00:00+01:00</published><updated>2023-08-17T00:00:00+01:00</updated><id>http://localhost:4000/blog/2023/08/17/introductionto-to-variational-quantum-eigensolver</id><content type="html" xml:base="http://localhost:4000/blog/2023/08/17/introductionto-to-variational-quantum-eigensolver/">&lt;h2 id=&quot;introduction&quot;&gt;Introduction&lt;/h2&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2023-08-19T21:06:52+01:00</updated><id>http://localhost:4000/feed.xml</id><entry><title type="html">Introduction to the Variational Quantum Eigensolver</title><link href="http://localhost:4000/blog/2023/08/17/introductionto-to-variational-quantum-eigensolver/" rel="alternate" type="text/html" title="Introduction to the Variational Quantum Eigensolver" /><published>2023-08-17T00:00:00+01:00</published><updated>2023-08-17T00:00:00+01:00</updated><id>http://localhost:4000/blog/2023/08/17/introductionto-to-variational-quantum-eigensolver</id><content type="html" xml:base="http://localhost:4000/blog/2023/08/17/introductionto-to-variational-quantum-eigensolver/">&lt;h2 id=&quot;introduction&quot;&gt;Introduction&lt;/h2&gt;
 &lt;p&gt;The variational quantum eigensolver (VQE) is a hybrid quantum-classical
 algorithm that performs the hard computation on a quantum computer then
 uses a classical computer to process the measurement results from
@@ -928,19 +928,19 @@ with respect to one of its ground states.&lt;/li&gt;
 &lt;ol&gt;
   &lt;li&gt;Eigenvalue $-1$ has eigenvectors:
     &lt;ul&gt;
-      &lt;li&gt;$\dfrac{1}{\sqrt{2}} \begin{bmatrix} 0 &amp;amp; 1 &amp;amp; 0 &amp;amp; 0\end{bmatrix}^\intercal$&lt;/li&gt;
-      &lt;li&gt;$\dfrac{1}{\sqrt{2}} \begin{bmatrix} 0 &amp;amp; 0 &amp;amp; 0 &amp;amp; 1\end{bmatrix}^\intercal$&lt;/li&gt;
+      &lt;li&gt;$\begin{bmatrix} 0 &amp;amp; 0 &amp;amp; 1 &amp;amp; 0\end{bmatrix}^\intercal$&lt;/li&gt;
+      &lt;li&gt;$\begin{bmatrix} 0 &amp;amp; 0 &amp;amp; 0 &amp;amp; 1\end{bmatrix}^\intercal$&lt;/li&gt;
     &lt;/ul&gt;
   &lt;/li&gt;
   &lt;li&gt;Eigenvalue $+1$ has eigenvectors:
     &lt;ul&gt;
-      &lt;li&gt;$\dfrac{1}{\sqrt{2}} \begin{bmatrix} 1 &amp;amp; 0 &amp;amp; 0 &amp;amp; 0\end{bmatrix}^\intercal$&lt;/li&gt;
-      &lt;li&gt;$\dfrac{1}{\sqrt{2}} \begin{bmatrix} 0 &amp;amp; 0 &amp;amp; 1 &amp;amp; 0\end{bmatrix}^\intercal$&lt;/li&gt;
+      &lt;li&gt;$\begin{bmatrix} 1 &amp;amp; 0 &amp;amp; 0 &amp;amp; 0\end{bmatrix}^\intercal$&lt;/li&gt;
+      &lt;li&gt;$\begin{bmatrix} 0 &amp;amp; 1 &amp;amp; 0 &amp;amp; 0\end{bmatrix}^\intercal$&lt;/li&gt;
     &lt;/ul&gt;
   &lt;/li&gt;
 &lt;/ol&gt;
 
-&lt;p&gt;We will prepare $\ket{\psi} = \dfrac{1}{\sqrt{2}} \begin{bmatrix} 0 &amp;amp; 0 &amp;amp; 0 &amp;amp; 1\end{bmatrix}^\intercal = \dfrac{1}{\sqrt{2}} \ket{11}$
+&lt;p&gt;We will prepare $\ket{\psi} = \begin{bmatrix} 0 &amp;amp; 0 &amp;amp; 0 &amp;amp; 1\end{bmatrix}^\intercal = \ket{11}$
 and measure $H$ against that state.&lt;/p&gt;
 
 &lt;p&gt;The circuit that prepares $\ket{\psi}$ and measures $H$ against that
@@ -966,7 +966,7 @@ in the code. We just perform a measurement on the first qubit.&lt;/p&gt;
 
 &lt;span class=&quot;n&quot;&gt;dev&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;qml&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;device&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
     &lt;span class=&quot;s&quot;&gt;&quot;default.qubit&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;wires&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;wires&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
     &lt;span class=&quot;n&quot;&gt;shots&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;10000&lt;/span&gt;
 &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
 
